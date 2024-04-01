@@ -1,0 +1,22 @@
+{{- if .Values.createDirectories -}}
+
+{{- $db_folder :=  printf "/mnt/%s" (.Values.database.storage.pv_name | replace "-" "_") -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-local-volumes-init-scripts
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+data:
+  local-volumes-init.sh: |
+    #!/bin/sh
+    # create DB volume
+    if [ -d {{ $db_folder }} ]; then
+      echo "Folder {{ $db_folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $db_folder }}"
+      mkdir -p {{ $db_folder }}
+      # Set ownership
+      chown  -R 999:999 {{ $db_folder }}
+    fi
+{{- end }}

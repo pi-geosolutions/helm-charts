@@ -1,0 +1,136 @@
+# Default values for sagui-platform.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+rootStoragePath: "/mnt/sagui"
+createDirectories: true
+
+nodeSelector: 
+  h2o: "true"
+
+tolerations: []
+
+affinity: {}
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+
+database:
+  image:
+    repository: postgis/postgis
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "14-3.2"
+  schema: guyane
+  auth:
+    dbname: sagui
+    postgres_user: postgres
+    postgres_password: sagui-password
+    # To use an externally managed secret, declare it here, this will override the authparams above
+    existingSecret: secrets-sagui-platform-database-secret
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    # Set external to true if you want to use an externally managed PV
+    external: false
+    pv_name: database-data
+    size: 200Gi
+  pgtuneConfig: |
+    -- DB Version: 14
+    -- OS Type: linux
+    -- DB Type: mixed
+    -- Total Memory (RAM): 8 GB
+    -- CPUs num: 4
+    -- Data Storage: ssd
+
+    ALTER SYSTEM SET
+    max_connections = '100';
+    ALTER SYSTEM SET
+    shared_buffers = '2GB';
+    ALTER SYSTEM SET
+    effective_cache_size = '6GB';
+    ALTER SYSTEM SET
+    maintenance_work_mem = '512MB';
+    ALTER SYSTEM SET
+    checkpoint_completion_target = '0.9';
+    ALTER SYSTEM SET
+    wal_buffers = '16MB';
+    ALTER SYSTEM SET
+    default_statistics_target = '100';
+    ALTER SYSTEM SET
+    random_page_cost = '1.1';
+    ALTER SYSTEM SET
+    effective_io_concurrency = '200';
+    ALTER SYSTEM SET
+    work_mem = '5242kB';
+    ALTER SYSTEM SET
+    min_wal_size = '1GB';
+    ALTER SYSTEM SET
+    max_wal_size = '4GB';
+    ALTER SYSTEM SET
+    max_worker_processes = '4';
+    ALTER SYSTEM SET
+    max_parallel_workers_per_gather = '2';
+    ALTER SYSTEM SET
+    max_parallel_workers = '4';
+    ALTER SYSTEM SET
+    max_parallel_maintenance_workers = '2';
+
+
+
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi

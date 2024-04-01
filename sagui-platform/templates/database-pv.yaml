@@ -1,0 +1,26 @@
+{{- if .Values.createDirectories -}}
+{{- if not .Values.database.storage.external -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-{{ .Values.database.storage.pv_name }}
+spec:
+  capacity:
+    storage: {{ .Values.database.storage.size | default "100Gi" }}
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  local:
+    path: {{ .Values.rootStoragePath }}/{{ .Values.database.storage.pv_name | replace "-" "_" }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: h2o
+          operator: In
+          values:
+          - "true"
+{{- end }}
+{{- end }}

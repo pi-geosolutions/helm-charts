@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-database
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "sagui-platform.fullname" . }}-database
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "sagui-platform.selectorLabels" . | nindent 6 }}
+      app: database
+  template:
+    metadata:
+      labels:
+        {{- include "sagui-platform.selectorLabels" . | nindent 8 }}
+        app: database
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: postgresql-data
+        persistentVolumeClaim:
+          claimName: {{ include "sagui-platform.fullname" . }}-database-data
+      # - name: postgresql-data
+      #   hostPath:
+      #     path: {{ .Values.rootStoragePath }}/postgresql_data
+      #     type: Directory
+      - name: initscripts
+        configMap:
+          name: {{ include "sagui-platform.fullname" . }}-database-initscripts
+      containers:
+      - name: database
+        image: {{ .Values.database.image.repository }}:{{ .Values.database.image.tag | default "latest" }}
+        imagePullPolicy: {{ .Values.database.image.pullPolicy | default "Always"}}
+        ports:
+          - containerPort: 5432
+        envFrom:
+          - secretRef:
+              {{- if hasKey .Values.database.auth "existingSecret" }}
+              name: {{ .Values.database.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "sagui-platform.fullname" . }}-database-secret
+              {{- end }}
+        env:
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+          - name: POSTGRES_HOST_AUTH_METHOD
+            value: scram-sha-256
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        - name: initscripts
+          mountPath: /docker-entrypoint-initdb.d/
+          readOnly: true
+        resources:
+          {{- toYaml .Values.database.resources | nindent 12 }}
+        startupProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          failureThreshold: 30
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 10
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 10
