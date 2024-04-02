@@ -1,0 +1,22 @@
+{{- $app := .Values.hyfaaScheduler -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if $app.storage.storage_class_name }}
+  storageClassName: {{ $app.storage.storage_class_name }}
+  {{- end }}
+  {{- if $app.storage.external }}
+  volumeName: {{ $app.storage.pv_name }}
+  {{- else }}
+  volumeName: {{ include "sagui-platform.fullname" . }}-{{ $app.storage.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $app.storage.size }}

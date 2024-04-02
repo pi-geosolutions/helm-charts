@@ -1,0 +1,57 @@
+
+{{- $app := .Values.atmo -}}
+{{ if $app.enabled }}
+{{/*
+Run atmo script
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-atmo
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $app.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $app.securityContext }}
+          securityContext: 
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name: atmo-data
+            persistentVolumeClaim:
+              claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
+          initContainers:
+          - name: fix-permissions-pvc
+            image: busybox:latest
+            command: 
+              - /bin/sh
+              - -c
+              - chown -R {{ $app.securityContext.runAsUser | default "999" }}:{{ $app.securityContext.runAsGroup | default "999" }} /mnt/atmo/data ;
+            volumeMounts:
+            - name: atmo-data
+              mountPath: /mnt/atmo/data
+          containers:
+          - name:  atmo
+            image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+            imagePullPolicy:  {{ $app.image.pullPolicy }}
+            # command:
+            # - python 
+            # - atmo_process.py
+            env:
+            - name: ATMO_STORAGE_PATH
+              value: /mnt/atmo/data
+            volumeMounts:
+            - name: atmo-data
+              mountPath: /mnt/atmo/data
+          restartPolicy: Never
+
+{{- end }}

@@ -1,6 +1,4 @@
 {{- if .Values.createDirectories -}}
-
-{{- $db_folder :=  printf "/mnt/%s" (.Values.database.storage.pv_name | replace "-" "_") -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,13 +8,58 @@ metadata:
 data:
   local-volumes-init.sh: |
     #!/bin/sh
-    # create DB volume
-    if [ -d {{ $db_folder }} ]; then
-      echo "Folder {{ $db_folder }} already exists. Skipping initialization for this one."
+
+    #################
+    # Database volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.database.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
     else
-      echo "creating {{ $db_folder }}"
-      mkdir -p {{ $db_folder }}
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
       # Set ownership
-      chown  -R 999:999 {{ $db_folder }}
+      chown  -R 999:999 {{ $folder }}
     fi
+
+
+    #################
+    # HYFAA scheduler volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.hyfaaScheduler.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
+    fi
+
+    #################
+    # Atmo volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.atmo.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
+    fi
+
+    #################
+    # Django static files volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.backend.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
+      # Set ownership
+      chown  -R 33:33 {{ $folder }}
+    fi
+
 {{- end }}

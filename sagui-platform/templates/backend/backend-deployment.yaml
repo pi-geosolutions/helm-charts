@@ -1,0 +1,118 @@
+{{- $app := .Values.backend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-backend
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sagui-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-backend
+  template:
+    metadata:
+      labels:
+        {{- include "sagui-platform.selectorLabels" . | nindent 8 }}
+        org.sagui-platform.service/name: {{ include "sagui-platform.fullname" . }}-backend
+        app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-backend
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+        {{- with $.Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: django-static-files
+        persistentVolumeClaim:
+          claimName: {{ include "sagui-platform.fullname" . }}-django-static-files
+      - name: hyfaa-scheduler-data
+        persistentVolumeClaim:
+          claimName: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+      - name: atmo-data
+        persistentVolumeClaim:
+          claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
+      {{- with $app.securityContext }}
+      securityContext: 
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      containers:
+      - name: backend
+        image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+        imagePullPolicy: {{ $app.image.pullPolicy }}
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - secretRef:
+              {{- if hasKey $app.auth "existingSecret" }}
+              name: {{ $app.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "sagui-platform.fullname" . }}-backend-secret
+              {{- end }}
+          {{- if .Values.smtp.enabled }}
+          - secretRef:
+              {{- if hasKey .Values.smtp.auth "existingSecret" }}
+              name: {{ .Values.smtp.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "sagui-platform.fullname" . }}-smtp-secret
+              {{- end }}
+          {{- end }}
+          - secretRef:
+              {{- if hasKey .Values.database.auth "existingSecret" }}
+              name: {{ .Values.database.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "sagui-platform.fullname" . }}-database-secret
+              {{- end }}
+        env:
+          - name: POSTGRES_HOST
+            value: {{ include "sagui-platform.fullname" . }}-database-svc
+          - name: POSTGRES_PORT
+            value: "5432"
+          - name: ALLOWED_HOSTS
+            value: {{ include "sagui-platform.allowedHosts" . | quote }}
+          - name: CSRF_TRUSTED_ORIGINS
+            value: {{ include "sagui-platform.csrf-whitelist" . | quote }}
+          - name: DRAINAGE_VT_URL
+            value: "/tiles/guyane.hyfaa_drainage/{z}/{x}/{y}.pbf"
+          - name: SAGUI_DATA_PATH
+            value: "/data"
+          - name: STATIC_URL
+            value: "/backend_static/"
+          - name: STATIC_ROOT
+            value: "/mnt/django-static/"
+          - name: MEDIA_ROOT
+            value: "media/"
+          - name: MEDIA_URL
+            value: "/media/"
+          - name: HYFAA_IMPORT_COMMIT_PAGE_SIZE
+            value: "50"
+          - name: HYFAA_IMPORT_NETCDF_ROOT_PATH
+            value: "/mnt/hyfaa-scheduler/data"
+          - name: RAINFALL_NETCDF_FILES_PATH
+            value: "/mnt/hyfaa-scheduler/data/databases/forcing_onmesh_db/data_store/"
+          - name: SAGUI_PATH_TO_ATMO_FILES
+            value: "/mnt/atmo/data/styled"
+        volumeMounts:
+        - name: django-static-files
+          mountPath: /mnt/django-static
+        - name: hyfaa-scheduler-data
+          mountPath: /mnt/hyfaa-scheduler/data
+        - name: atmo-data
+          mountPath: /mnt/atmo/data
+        # livenessProbe:
+        #   httpGet:
+        #     path: /backend/srv/eng/catalog.search
+        #     port: 8080
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        # startupProbe:
+        #   tcpSocket:
+        #     port: 8080
+        #   failureThreshold: 5
+        #   periodSeconds: 50
+---

@@ -1,0 +1,61 @@
+{{- $app := .Values.pgTileserv -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-pg-tileserv
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-pg-tileserv
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sagui-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-pg-tileserv
+  template:
+    metadata:
+      labels:
+        {{- include "sagui-platform.selectorLabels" . | nindent 8 }}
+        org.sagui-platform.service/name: {{ include "sagui-platform.fullname" . }}-pg-tileserv
+        app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-pg-tileserv
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+        {{- with $.Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      terminationGracePeriodSeconds: 10
+      {{- with $app.securityContext }}
+      securityContext: 
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      containers:
+      - name: pg-tileserv
+        image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+        imagePullPolicy: {{ $app.image.pullPolicy }}
+        ports:
+          - containerPort: 7800
+        envFrom:
+          - secretRef:
+              {{- if hasKey $app.auth "existingSecret" }}
+              name: {{ $app.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "sagui-platform.fullname" . }}-pg-tileserv-secret
+              {{- end }}
+        env:
+          - name: TS_BASEPATH
+            value: /tiles/
+        # livenessProbe:
+        #   httpGet:
+        #     path: /backend/srv/eng/catalog.search
+        #     port: 8080
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        # startupProbe:
+        #   tcpSocket:
+        #     port: 8080
+        #   failureThreshold: 5
+        #   periodSeconds: 50
+---

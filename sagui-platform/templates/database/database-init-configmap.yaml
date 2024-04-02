@@ -6,8 +6,6 @@ metadata:
   labels:
     {{- include "sagui-platform.labels" . | nindent 4 }}
 data:
-  00_pg_hba_config_sh: |-
-    echo "host  all  all  all   md5" >> /var/lib/postgresql/data/pgdata/pg_hba.conf
   10_pgtune.sql: |
 {{ .Values.database.pgtuneConfig | indent 4 }}
   15_custom_config.sql: |

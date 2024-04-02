@@ -1,0 +1,94 @@
+
+{{- $app := .Values.backend -}}
+{{ if $app.cronjob.enabled }}
+{{/*
+Run django backend scripts
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-backend
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $app.cronjob.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $app.securityContext }}
+          securityContext: 
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name: django-static-files
+            persistentVolumeClaim:
+              claimName: {{ include "sagui-platform.fullname" . }}-django-static-files
+          - name: hyfaa-scheduler-data
+            persistentVolumeClaim:
+              claimName: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+          - name: atmo-data
+            persistentVolumeClaim:
+              claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
+          containers:
+          - name:  backend
+            image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+            imagePullPolicy:  {{ $app.image.pullPolicy }}
+            command:
+            - bash
+            - -c 
+            - ./manage.py hyfaa_import ;
+              ./manage.py rainfall_import ;
+              ./manage.py send_alerts ; 
+              echo "last updated $(date +'%d-%m-%Y_%H:%M')" ;
+            envFrom:
+              - secretRef:
+                  {{- if hasKey $app.settings "existingSecret" }}
+                  name: {{ $app.settings.existingSecret }}
+                  {{- else }}
+                  name: {{ include "sagui-platform.fullname" . }}-backend-secret
+                  {{- end }}
+              {{- if .Values.smtp.enabled }}
+              - secretRef:
+                  {{- if hasKey .Values.smtp.auth "existingSecret" }}
+                  name: {{ .Values.smtp.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ include "sagui-platform.fullname" . }}-smtp-secret
+                  {{- end }}
+              {{- end }}
+              - secretRef:
+                  {{- if hasKey .Values.database.auth "existingSecret" }}
+                  name: {{ .Values.database.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ include "sagui-platform.fullname" . }}-database-secret
+                  {{- end }}
+            env:
+              - name: POSTGRES_HOST
+                value: {{ include "sagui-platform.fullname" . }}-database-svc
+              - name: POSTGRES_PORT
+                value: "5432"
+              - name: SAGUI_DATA_PATH
+                value: "/data"
+              - name: HYFAA_IMPORT_COMMIT_PAGE_SIZE
+                value: "50"
+              - name: HYFAA_IMPORT_NETCDF_ROOT_PATH
+                value: "/mnt/hyfaa-scheduler/data"
+              - name: RAINFALL_NETCDF_FILES_PATH
+                value: "/mnt/hyfaa-scheduler/data/databases/forcing_onmesh_db/data_store/"
+              - name: SAGUI_PATH_TO_ATMO_FILES
+                value: "/mnt/atmo/data/styled"
+            volumeMounts:
+            - name: django-static-files
+              mountPath: /mnt/django-static
+            - name: hyfaa-scheduler-data
+              mountPath: /mnt/hyfaa-scheduler/data
+            - name: atmo-data
+              mountPath: /mnt/atmo/data
+          restartPolicy: Never
+
+{{- end }}

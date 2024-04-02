@@ -16,6 +16,8 @@ spec:
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
+        # Force redeploy at each helm upgrade
+        timestamp: {{ now | quote }}
       {{- end }}
       labels:
         {{- include "sagui-platform.selectorLabels" . | nindent 8 }}

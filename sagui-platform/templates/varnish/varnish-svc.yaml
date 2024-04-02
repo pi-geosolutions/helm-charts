@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-varnish-svc
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 80
+  selector:
+    {{- include "sagui-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-varnish
