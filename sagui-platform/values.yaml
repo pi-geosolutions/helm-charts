@@ -161,7 +161,7 @@ hyfaaScheduler:
   schedule: "10 6 * * *"
   image:
     repository: pigeosolutions/hyfaa-scheduler
-    tag: "latest"
+    tag: "20240404-1558-166ca9b"
     pullPolicy: Always
   securityContext:
     runAsUser: 1001

@@ -41,7 +41,7 @@ spec:
             - name: hyfaa-scheduler-data
               mountPath: /work
           containers:
-          - name:  hyfaa-scheduler
+          - name:  hyfaa-scheduler-crontask
             image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
             imagePullPolicy:  {{ $app.image.pullPolicy }}
             command:
@@ -51,6 +51,8 @@ spec:
             env:
             - name: MPLCONFIGDIR
               value: /work/.config
+            - name: CLEAR_LOCKS
+              value: "true"
             volumeMounts:
             - name: hyfaa-scheduler-data
               mountPath: /work

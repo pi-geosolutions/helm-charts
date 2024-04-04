@@ -7,7 +7,7 @@ Run django backend scripts
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "sagui-platform.fullname" . }}-backend
+  name: {{ include "sagui-platform.fullname" . }}-backend-crontask
 spec:
   concurrencyPolicy: Forbid
   schedule: {{ $app.cronjob.schedule | quote }}
@@ -36,7 +36,7 @@ spec:
             persistentVolumeClaim:
               claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
           containers:
-          - name:  backend
+          - name:  backend-crontask
             image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
             imagePullPolicy:  {{ $app.image.pullPolicy }}
             command:
@@ -48,8 +48,8 @@ spec:
               echo "last updated $(date +'%d-%m-%Y_%H:%M')" ;
             envFrom:
               - secretRef:
-                  {{- if hasKey $app.settings "existingSecret" }}
-                  name: {{ $app.settings.existingSecret }}
+                  {{- if hasKey $app.auth "existingSecret" }}
+                  name: {{ $app.auth.existingSecret }}
                   {{- else }}
                   name: {{ include "sagui-platform.fullname" . }}-backend-secret
                   {{- end }}
