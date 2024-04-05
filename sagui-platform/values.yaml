@@ -162,7 +162,7 @@ hyfaaScheduler:
   image:
     repository: pigeosolutions/hyfaa-scheduler
     tag: "20240404-1558-166ca9b"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   securityContext:
     runAsUser: 1001
     runAsGroup: 1001

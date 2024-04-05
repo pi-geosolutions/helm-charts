@@ -7,7 +7,7 @@ Run hyfaa scheduler
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler
+  name: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-crontask
 spec:
   concurrencyPolicy: Forbid
   schedule: {{ $app.schedule | quote }}
