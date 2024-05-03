@@ -2,6 +2,26 @@
 
 Provides backup services for a quite standard geOrchestra infrastructure (containerized). It assumes that the data volumes are file-based volumes (local storage), all under the same common path
 
+## Installing the Chart
+
+To install the chart with the release name `datahub`
+
+```console
+helm repo add <alias> https://<orgname>.github.io/helm-charts
+helm repo update
+helm install my-<chart-name> <alias>/<chart-name>
+```
+
+## Uninstalling the Chart
+
+To uninstall the `datahub` deployment
+
+```console
+helm delete my-<chart-name>
+```
+
+The command removes all the Kubernetes components associated with the chart **including persistent volumes** and deletes the release.
+
 ## Config
 Please look at the values.yaml
 
