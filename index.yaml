@@ -1,0 +1,92 @@
+apiVersion: v1
+entries:
+  backups:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:44.480070168Z"
+    description: A Helm chart for Kubernetes
+    digest: 664f48a4ac9e1e86a5e162cc66544a595a15cdee532ed387cb7d0850213d810c
+    name: backups
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/backups-1.0.10/backups-1.0.10.tgz
+    version: 1.0.10
+  databases:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:44.597987219Z"
+    description: A Helm chart to deploy platform databases
+    digest: 16e299bea833e8b4e5b6287da94e51933f0cc515ea35fcea9c54117f3e0cd58e
+    name: databases
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/databases-1.0.10/databases-1.0.10.tgz
+    version: 1.0.10
+  mviewer:
+  - apiVersion: v2
+    appVersion: 4.0.0
+    created: "2024-05-03T14:24:44.736816616Z"
+    description: A Helm chart to deploy mviewer
+    digest: 16d6340cee064dfd83eb6ef66e1469e90c0ab0d699d12477fcbdce31042c002c
+    name: mviewer
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/mviewer-1.0.10/mviewer-1.0.10.tgz
+    version: 1.0.10
+  nginx:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:44.851587702Z"
+    description: A Helm chart for Kubernetes
+    digest: 334bfacbddb92db68cbdf24a40886ade0b501c510f233310c28216de3b2fe977
+    name: nginx
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/nginx-1.0.10/nginx-1.0.10.tgz
+    version: 1.0.10
+  sftp:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:44.95301245Z"
+    description: A Helm chart for Kubernetes
+    digest: d11bc6042814935b0795a8bdc2deb964dddcae0411928760b2185f4c39eabffb
+    name: sftp
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/sftp-1.0.10/sftp-1.0.10.tgz
+    version: 1.0.10
+  sk-harvesters:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:45.057236866Z"
+    description: Configure data sk-harvesters (apps created by Peter Hanecak) to harvest
+      several Slovak public offices providing data
+    digest: 5642198f4d89d0127e3efc94c57330dfa679975d91e4d3c16e5bdd30549582b6
+    name: sk-harvesters
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/sk-harvesters-1.0.10/sk-harvesters-1.0.10.tgz
+    version: 1.0.10
+  volumes:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:45.201446972Z"
+    description: A Helm chart to configure volumes (localstorage PV)
+    digest: 0135a73bc5073d295355dc788b601422ee74e366214cfc9c5d9b3bf99ea13d9b
+    name: volumes
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/volumes-1.0.10/volumes-1.0.10.tgz
+    version: 1.0.10
+  wordpress:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:24:45.326464322Z"
+    description: A Helm chart to deploy wordpress
+    digest: 0581cc7e3327a74dbae1e0c7b8884a4cf1419af55a9f68ac57a95c8eff756a19
+    name: wordpress
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/wordpress-1.0.10/wordpress-1.0.10.tgz
+    version: 1.0.10
+generated: "2024-05-03T14:24:45.326471726Z"
