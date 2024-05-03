@@ -2,6 +2,25 @@
 
 Deploys SFTP-related services to use around geOrchestra
 
+## Installing the Chart
+
+To install the chart with the release name `my-sftp`
+
+```console
+helm repo add pigeosolutions https://pi-geosolutions.github.io/helm-charts
+helm repo update
+helm install my-sftp pigeosolutions/sftp
+```
+
+## Uninstalling the Chart
+
+To uninstall the `my-sftp` deployment
+
+```console
+helm delete my-sftp
+```
+
+The command removes all the Kubernetes components associated with the chart **including persistent volumes** and deletes the release.
 ## Config
 Please look at the values.yaml
 

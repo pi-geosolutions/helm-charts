@@ -4,20 +4,20 @@ Provides backup services for a quite standard geOrchestra infrastructure (contai
 
 ## Installing the Chart
 
-To install the chart with the release name `datahub`
+To install the chart with the release name `my-backups`
 
 ```console
-helm repo add <alias> https://<orgname>.github.io/helm-charts
+helm repo add pigeosolutions https://pi-geosolutions.github.io/helm-charts
 helm repo update
-helm install my-<chart-name> <alias>/<chart-name>
+helm install my-backups pigeosolutions/backups
 ```
 
 ## Uninstalling the Chart
 
-To uninstall the `datahub` deployment
+To uninstall the `my-backups` deployment
 
 ```console
-helm delete my-<chart-name>
+helm delete my-backups
 ```
 
 The command removes all the Kubernetes components associated with the chart **including persistent volumes** and deletes the release.

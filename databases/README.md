@@ -2,6 +2,25 @@
 
 Provides database services for a quite standard geOrchestra infrastructure (containerized). 
 
+## Installing the Chart
+
+To install the chart with the release name `my-databases`
+
+```console
+helm repo add pigeosolutions https://pi-geosolutions.github.io/helm-charts
+helm repo update
+helm install my-databases pigeosolutions/databases
+```
+
+## Uninstalling the Chart
+
+To uninstall the `my-databases` deployment
+
+```console
+helm delete my-databases
+```
+
+The command removes all the Kubernetes components associated with the chart **including persistent volumes** and deletes the release.
 ## Config
 Please look at the values.yaml
 
