@@ -44,6 +44,23 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/nginx-1.0.10/nginx-1.0.10.tgz
     version: 1.0.10
+  sagui-platform:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-05-03T14:32:55.325823381Z"
+    dependencies:
+    - alias: nginx
+      condition: nginx.enabled
+      name: nginx
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.14.2
+    description: A Helm chart for Kubernetes
+    digest: 289527876c8ab67a6f6a801114ae05bf42f2cf47cdbe1b1b7117f9166b42d066
+    name: sagui-platform
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/sagui-platform-0.1.0/sagui-platform-0.1.0.tgz
+    version: 0.1.0
   sftp:
   - apiVersion: v2
     appVersion: 1.16.0
@@ -89,4 +106,4 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/wordpress-1.0.10/wordpress-1.0.10.tgz
     version: 1.0.10
-generated: "2024-05-03T14:24:45.326471726Z"
+generated: "2024-05-03T14:32:55.781527226Z"
