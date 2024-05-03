@@ -1,0 +1,34 @@
+{{- if .Values.ldap.useridCronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sftp.fullname" . }}-ldap-userid-cronjob
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ .Values.ldap.useridCronjob.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name:  ldap-userid-cronjob
+            image: {{ .Values.ldap.useridCronjob.image | quote }}
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: LDAP_URI
+              value: ldap://{{ .Values.ldap.host }}:{{ .Values.ldap.port }}
+            - name: LDAPADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.ldap.auth.existingSecret.name | default (printf "%s-georchestra-ldap-secret" (include "sftp.fullname" .)) }}
+                    key: {{ .Values.ldap.auth.existingSecret.ldapadminPasswordKey }}
+                    optional: false
+              {{- if .Values.ldap.useridCronjob.promPushgatewayUrl }}
+            - name: PROM_PUSHGATEWAY_URI
+              value: {{ .Values.ldap.useridCronjob.promPushgatewayUrl | quote }}
+              {{- end }}
+          restartPolicy: Never
+
+{{- end }}

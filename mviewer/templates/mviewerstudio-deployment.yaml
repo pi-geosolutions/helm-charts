@@ -1,0 +1,97 @@
+{{- if .Values.studio.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mviewer.fullname" . }}-mviewerstudio
+  labels:
+    {{- include "mviewer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.studio.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "mviewer.selectorLabels" . | nindent 6 }}
+      app: mviewerstudio
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mviewer.selectorLabels" . | nindent 8 }}
+        app: mviewerstudio
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /*
+      serviceAccountName: {{ include "mviewer.serviceAccountName" . }}
+      */}}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: mviewer-conf
+        persistentVolumeClaim:
+          claimName: {{ include "mviewer.fullname" . }}-mviewer-conf
+      - name: mviewerstudio-conf
+        # Persistent storage for conf
+        persistentVolumeClaim:
+          claimName: {{ include "mviewer.fullname" . }}-mviewerstudio-conf
+      - name: mviewerstudio-conf-json
+        # initial config file
+        configMap:
+          name: {{ include "mviewer.fullname" . }}-mviewerstudio-conf-json
+      initContainers:
+      - name: copy-starter-configmap
+        image: busybox:latest
+        {{- if .Values.studio.resetConfig }}
+        command: ["sh", "-c", "cp /cm/config.json /mnt/mviewerstudio_conf/; chown -R 999:999 /mnt/mviewerstudio_conf/"]
+        {{- else }}
+        command: ["sh", "-c", "if ! [ -f /mnt/mviewerstudio_conf/config.json ]; then cp /cm/config.json /mnt/mviewerstudio_conf/; fi ; chown -R 999:999 /mnt/mviewerstudio_conf/"]
+        {{- end }}
+        volumeMounts:
+        - name: mviewerstudio-conf
+          mountPath: /mnt/mviewerstudio_conf
+        - name: mviewerstudio-conf-json
+          mountPath: /cm
+      containers:
+      - name: mviewerstudio
+        securityContext:
+          {{- toYaml .Values.podSecurityContext | nindent 10 }}
+        image: {{ .Values.studio.image | default "mviewer/mviewerstudio:python-stable" | quote }}
+        imagePullPolicy: {{ .Values.studio.imagePullPolicy | default "IfNotPresent" }}
+        env:
+        - name: MVIEWERSTUDIO_URL_PATH_PREFIX
+          value: mviewerstudio
+        - name: CONF_PATH_FROM_MVIEWER
+          value: apps/drafts
+        - name: CONF_PUBLISH_PATH_FROM_MVIEWER
+          value: apps/published
+        - name: EXPORT_CONF_FOLDER
+          value: /home/apprunner/apps/drafts
+        - name: MVIEWERSTUDIO_PUBLISH_PATH
+          value: /home/apprunner/apps/published
+        - name: DEFAULT_ORG
+          value: no_org
+        resources:
+          {{- toYaml .Values.studio.resources | nindent 10 }}
+        volumeMounts:
+        - name: mviewer-conf
+          mountPath: /home/apprunner/apps
+        - name: mviewerstudio-conf
+          mountPath: /home/apprunner/mviewerstudio_backend/static/apps
+{{- end }}

@@ -1,0 +1,24 @@
+{{- if .Values.createDirectories -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "volumes.fullname" . }}-init-script
+  labels:
+    {{- include "volumes.labels" . | nindent 4 }}
+data:
+  volumes-init.sh: |
+    #!/bin/sh
+    {{- range .Values.directories }}
+    # create
+    if [ -d "$DIR" ]; then
+      echo "/mnt/{{ .dir.name }} already exists. Doing nothing"
+    else
+      echo "creating /mnt/{{ .dir.name }}"
+      mkdir -p /mnt/{{ .dir.name }}
+      # Set ownership
+      chown  {{ .dir.acl.uid | default "999" }}:{{ .dir.acl.gid | default "999" }} /mnt/{{ .dir.name }}
+      # Set ACLs
+      chmod  {{ .dir.acl.mod | default "755" }} /mnt/{{ .dir.name }}
+    fi
+    {{ end }}
+{{- end }}

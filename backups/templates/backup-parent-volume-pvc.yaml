@@ -1,0 +1,21 @@
+{{- if .Values.restoreConsole.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "backups.fullname" . }}-mnt
+  labels:
+    {{- include "backups.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "backups.fullname" . }}-backups
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.restoreConsole.storage.storage_class_name }}
+  storageClassName: {{ .Values.restoreConsole.storage.storage_class_name }}
+  {{- end }}
+  {{- if .Values.restoreConsole.storage.root_storage.pv_name }}
+  volumeName: {{ .Values.restoreConsole.storage.root_storage.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.restoreConsole.storage.root_storage.size }}
+{{- end }}

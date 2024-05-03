@@ -1,0 +1,87 @@
+
+{{- if and .Values.backupJobs.enabled .Values.backupJobs.georchestraDatabase.enabled -}}
+{{/*
+Make a dump of the georchestra applications database (performs a pg_dumpall)
+*/}}
+{{- $db := .Values.backupJobs.georchestraDatabase -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "backups.fullname" . }}-backup-georchestra-database
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $db.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+          - name: backup-toolbox-root-ssh-keys
+            secret:
+              secretName: {{ .Values.globalConfig.rootSshKeys.existingSecret.name }}
+          {{- end }}{{ end }}
+          - name: backups-dbs
+            emptyDir: {}
+            # hostPath:
+            #   path: /backups/dbs
+            #   type: DirectoryOrCreate
+          containers:
+          - name:  georchestra-database-backup-cronjob
+            image: {{ .Values.globalConfig.image }}:{{ .Values.globalConfig.tag }}
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - /entrypoint.sh; /root/scripts/backup-postgresql-db.sh
+            {{- if .Values.globalConfig.restic.existingSecret }}
+            envFrom:
+              - secretRef:
+                  name: {{ .Values.globalConfig.restic.existingSecret.name | quote }}
+            {{- end }}
+            env:
+            - name: HOST
+              value: {{ .Values.globalConfig.domainName | quote }}
+            - name: POSTGRES_HOST
+              value: {{ $db.host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ $db.port | default "5432" | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret.name | default (printf "%s-georchestra-database-secret" (include "backups.fullname" .)) }}
+                    key: {{ $db.auth.existingSecret.keys.user | default "user" }}
+                    optional: false
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret.name | default (printf "%s-georchestra-database-secret" (include "backups.fullname" .)) }}
+                    key: {{ $db.auth.existingSecret.keys.password | default "password" }}
+                    optional: false
+            - name: DUMP_ONLY
+              value: {{ $db.dump_only | default "true" | quote }}
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: ROOT_SSH_KEYS_PATH
+              value: /secrets/backup-toolbox-root-ssh-keys/
+            {{- end }}{{ end }}
+            {{- if .Values.globalConfig.promPushgatewayUrl }}
+            - name: PUSHGATEWAY_URI
+              value: {{ .Values.globalConfig.promPushgatewayUrl | quote }}
+            {{- end }}
+            volumeMounts:
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: backup-toolbox-root-ssh-keys
+              mountPath: /secrets/backup-toolbox-root-ssh-keys
+              readOnly: true
+            {{- end }}{{ end }}
+            - name: backups-dbs
+              mountPath: /dbs
+          restartPolicy: Never
+
+{{- end }}

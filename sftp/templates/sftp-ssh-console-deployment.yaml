@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sftp.fullname" . }}-ssh-ldappam
+  labels:
+    {{- include "sftp.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sftp.fullname" . }}-sftp
+spec:
+  replicas: {{ .Values.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "sftp.selectorLabels" . | nindent 6 }}
+      app: ssh-ldappam
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sftp.selectorLabels" . | nindent 8 }}
+        app: ssh-ldappam
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+        {{- if .Values.sshdConfigExistingSecret }}
+      - name: sshd-config
+        secret:
+          secretName: {{ .Values.sshdConfigExistingSecret.name }}
+        {{- end }}
+      {{- if .Values.rootAuthorizedKeys }}
+      - name: ssh-ldappam-root-authorizedkeys
+        configMap:
+          name: {{ include "sftp.fullname" . }}-sftp-ssh-ldappam-root-authorizedkeys
+      {{- end }}
+      {{- if .Values.sudoers }}
+      - name: ssh-ldappam-sudoers
+        configMap:
+          name: {{ include "sftp.fullname" . }}-sftp-ssh-ldappam-sudoers
+          defaultMode: 0440
+      {{- end }}
+      - name:  users-ssh-console-crontabs
+        persistentVolumeClaim:
+          claimName: {{ include "sftp.fullname" . }}-ssh-crontabs
+      {{- range .Values.mountedDirectories }}
+      - name:  {{ .dir.pvcname }}
+        persistentVolumeClaim:
+          claimName: {{ .dir.pvcname }}
+      {{- end }}
+      containers:
+      - name: ssh-ldappam
+        image: {{ .Values.image | quote }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        env:
+          - name: HOSTNAME
+            value: {{ .Values.fqdn }}
+          - name: NAME
+            value: {{ .Values.name }}
+          - name: LDAP_BASE
+            value: {{ .Values.ldap.basedn }}
+          - name: LDAP_URI
+            value: "ldap://{{ .Values.ldap.host }}:{{ .Values.ldap.port }}"
+          - name: NSLCD_HOMEDIR
+            value: /mnt/geoserver_geodata/users_data/$$uid
+          - name: SSH_ROOT_AUTHORIZED_KEYS_FILE
+            value: /cm/ssh-ldappam-root-authorizedkeys/ssh_ldappam_root_authorizedkeys
+            {{- if .Values.sshdConfigExistingSecret }}
+          - name: SSHD_CONFIG_SECRET
+            value: /secrets/sshd-config
+            {{- end }}
+            {{- if .Values.sudoers }}
+          - name: SUDOERS_CONFIG_FOLDER
+            value: /cm/sudoers.d
+            {{- end }}
+        volumeMounts:
+        {{- if .Values.sshdConfigExistingSecret }}
+        - name: sshd-config
+          mountPath: /secrets/sshd-config
+          readOnly: true
+        {{- end }}
+        {{- if .Values.rootAuthorizedKeys }}
+        - name: ssh-ldappam-root-authorizedkeys
+          mountPath: /cm/ssh-ldappam-root-authorizedkeys
+          readOnly: true
+        {{- end }}
+        {{- if .Values.sudoers }}
+        - name: ssh-ldappam-sudoers
+          mountPath: /cm/sudoers.d
+          readOnly: true
+        {{- end }}
+        - name: users-ssh-console-crontabs
+          mountPath: /var/spool/cron/crontabs
+      {{- range .Values.mountedDirectories }}
+        - name:  {{ .dir.pvcname }}
+          mountPath: /mnt/{{ .dir.name }}
+      {{- end }}
+        readinessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 18
+        livenessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          failureThreshold: 2

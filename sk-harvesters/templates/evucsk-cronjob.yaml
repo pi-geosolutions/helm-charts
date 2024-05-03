@@ -1,0 +1,100 @@
+{{- if .Values.evucsk.enabled }}
+# Health data harvester
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sk-harvesters.fullname" . }}-evucsk
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ .Values.evucsk.schedule | default "3 05,12 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name:  logs
+            persistentVolumeClaim:
+              claimName: {{ include "sk-harvesters.fullname" . }}-logs
+          # - name: logs
+          #   hostPath:
+          #     path: {{ .Values.rootStoragePath }}/logs
+          #     type: Directory
+          {{- if .Values.evucsk.useGitLocalFolder }}
+          - name: evucsk-data
+            persistentVolumeClaim:
+              claimName: {{ include "sk-harvesters.fullname" . }}-evucsk-data
+          # - name: evucsk-data
+          #   hostPath:
+          #     path: {{ .Values.rootStoragePath }}/evucsk_data
+          #     type: Directory
+          {{- end }}
+          containers:
+          - name:  harvester-evucsk
+            image: {{ .Values.evucsk.image | default "registry.gitlab.com/po-kraj-sk/evucsk-harvester/evucsk-harvester:latest"}}
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.evucsk.databaseConnectionString.existingSecret.name | default (printf "%s-sk-harvesters-common-config" (include "sk-harvesters.fullname" .)) }}
+                    key: {{ .Values.evucsk.databaseConnectionString.existingSecret.key }}
+                    optional: false
+            - name: EVUCSK_ID
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.evucsk.evucskCredentials.existingSecret.name | default (printf "%s-sk-harvesters-common-config" (include "sk-harvesters.fullname" .)) }}
+                    key: {{ .Values.evucsk.evucskCredentials.existingSecret.key_id }}
+                    optional: false
+            - name: EVUCSK_USERNAME
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.evucsk.evucskCredentials.existingSecret.name | default (printf "%s-sk-harvesters-common-config" (include "sk-harvesters.fullname" .)) }}
+                    key: {{ .Values.evucsk.evucskCredentials.existingSecret.key_user }}
+                    optional: false
+            - name: EVUCSK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.evucsk.evucskCredentials.existingSecret.name | default (printf "%s-sk-harvesters-common-config" (include "sk-harvesters.fullname" .)) }}
+                    key: {{ .Values.evucsk.evucskCredentials.existingSecret.key_password }}
+                    optional: false
+            - name: DB_SCHEMA
+              value: {{ .Values.evucsk.dbschema | default "evucsk" | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.evucsk.loglevel | default "INFO" | quote }}
+            - name: LOG_FILE
+              value: {{ .Values.evucsk.logfile | default "/app/logs/evucsk_harvester.log" }}
+            {{- if .Values.evucsk.useGitLocalFolder }}
+            - name: GIT_LOCAL_FOLDER
+              value: /mnt/evucsk_data
+            {{- end }}
+            - name: BE_CAREFUL
+              value: {{ .Values.evucsk.becareful | default "True" | quote }}
+            - name: EVUCSK_ENABLE_LEKARNE
+              value: {{ .Values.evucsk.enableLekarne | default "True" | quote }}
+            - name: EVUCSK_ENABLE_POHOTOVOST
+              value: {{ .Values.evucsk.enablePohotovost | default "True" | quote }}
+            - name: EVUCSK_ENABLE_ZARIADENIA
+              value: {{ .Values.evucsk.enableZariadenia | default "True" | quote }}
+            - name: EVUCSK_ENABLE_SLUZBY
+              value: {{ .Values.evucsk.enableSluzby | default "True" | quote }}
+            - name: PROM_PUSHGATEWAY_URI
+              value: {{ .Values.promPushgatewayUrl | default "" }}
+            - name: RETRY_CONNECT
+              value: {{ .Values.evucsk.retry_connect | default "3" | quote }}
+            - name: RETRY_BACKOFF
+              value: {{ .Values.evucsk.retry_backoff | default "0.25" | quote }}
+            volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+            {{- if .Values.evucsk.useGitLocalFolder }}
+            - name: evucsk-data
+              mountPath: /mnt/evucsk_data
+            {{- end }}
+          restartPolicy: Never
+{{- end }}

@@ -1,0 +1,132 @@
+# Default values for wordpress.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+rootStoragePath: /mnt
+
+pvc:
+  # storage_class_name: local-storage
+  georchestra_postgresql_data:
+    enabled: false
+    pv_name: postgresql-data
+    size: 2Gi
+  web:
+    enabled: true
+    pv_name: www-data
+    size: 2Gi
+
+createDirectories: true
+
+# All directory defined here will be
+# - created in the Filesystem
+# - created a corresponding PV definition (see persistent-volumes.yaml)
+directories:
+  - dir:
+      name: georchestra_postgresql
+      acl:
+        uid: "999"
+        gid: "1001"
+        mod: "755"
+      size: 20Gi
+  - dir:
+      name: geonetwork_datadir
+      acl: {}
+  - dir:
+      name: gn4_es_data
+      acl: {}
+      size: 20Gi
+  - dir:
+      name: geoserver_datadir
+      acl:
+        mod: "775"
+  - dir:
+      name: geoserver_geodata
+      acl:
+        mod: "775"
+      size: 100Gi
+  - dir:
+      name: geoserver_tiles
+      acl: {}
+      size: 10Gi
+  - dir:
+      name: mapstore_datadir
+      acl: {}
+  - dir:
+      name: ldap_data
+      acl:
+        uid: "101"
+        gid: "101"
+  - dir:
+      name: ldap_config
+      acl:
+        uid: "101"
+        gid: "101"
+  - dir:
+      name: postgis_userdb_data
+      acl:
+        uid: "999"
+        gid: "999"
+        mod: "755"
+      size: 50Gi
+  - dir:
+      name: datafeeder_data
+      acl:
+        uid: "999"
+        gid: "999"
+        mod: "755"
+      size: 50Gi
+  - dir:
+      name: mviewer_conf
+      acl:
+        mod: "775"
+  - dir:
+      name: mviewerstudio_conf
+      acl:
+        mod: "775"
+  - dir:
+      name: www_data
+      acl:
+        mod: "775"
+  - dir:
+      name: wordpress_html_content
+      acl:
+        uid: "33"
+        gid: "33"
+  - dir:
+      name: wordpress_mysql_data
+      acl: {}
+  - dir:
+      name: logs
+      acl: {}
+  - dir:
+      name: logs/harvesters
+      acl:
+        uid: "999"
+        gid: "999"
+        mod: "755"
+      size: 100Mi
+  - dir:
+      name: users_ssh_console_crontabs
+      acl:
+        uid: "root"
+        gid: "crontab"
+        mod: "u+rwx,g+wx,o+t"
+  - dir:
+      name: elasticsearch_data
+      acl:
+        uid: "1000"
+        gid: "1000"
+  - dir:
+      name: elasticsearch_backups
+      acl:
+        uid: "1000"
+        gid: "1000"
+  - dir:
+      name: evucsk_data
+      acl:
+        uid: "0"
+        gid: "0"
+      size: 50Mi

@@ -1,0 +1,68 @@
+# Default values for sftp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+fqdn: geoportalksk.sk
+name: kskshell
+
+ldap:
+  basedn: "dc=georchestra,dc=org"
+  host: georchestra-core-ldap-svc
+  port: "389"
+  auth:
+    existingSecret:  # Needs to provide a secret, I didn't plan an alternative
+      name: ksksecrets-ldap-envs
+      ldapadminPasswordKey: SLAPD_PASSWORD
+
+  useridCronjob:
+    enabled: true
+    image: pigeosolutions/georchestra-ldap-userid-job:20211210-2300-15c5ffb
+    schedule: '*/10 * * * *'
+    # promPushgatewayUrl: pushgateway-prometheus-pushgateway.monitoring.svc:9091
+
+
+podAnnotations: {}
+
+replicaCount : 1
+
+image: pigeosolutions/georchestra-ssh-ldappam:20221124-1645-5e6fb30-withGDAL
+# Port used for the loadbalancer, for external access using ssh
+# sshExternalPort: "2225"
+
+resources: {}
+
+rootAuthorizedKeys: |
+    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDI4i8yJclrklJwzS2qsSAWzCxK0wOsPMQ+NmNNd8u/Cmk3/dp/swyHaAktarnbnp0BxqiIi4XML03pemDRq8v5pp/OmxpTNu1GKygb96XQ3V/SSMLXTQnsj85RqjX5DVMieSiyyjIECx/3orki9VhTSg+e3Rge2YeQHq1vi2kATQs8lTjVaCcf2jkReHMMlpUefMzSipC8Z5wIc0hVfzOpcH+v2iFB8BBvRAirrUukA+LuyviifUMO1s/gkZP0LJyBF9x9DLXMZ6x/LEhtBeiaGp8yTl2USQGPvRLrQ9PP0N+8u1EVMdHHbEGkcZTuJL6gxylp1HSM8slnndR2nuj7 jpommier@Thor
+
+sshdConfigExistingSecret: {}
+
+# # Following content will be mounted in /etc/sudoers.d/privileged_users
+# sudoers: |
+#     # Configure the users that will have sudo power. Try to be as secure as possible in the rights you give them
+#     jpommier ALL=(www-data) NOPASSWD: ALL
+
+storage:
+  crontab:
+    # storage_class_name: localstorage
+    pv_name: volumes-users-ssh-console-crontabs
+    # size: 50Mi
+
+mountedDirectories:
+  - dir:
+      name: geoserver_datadir
+      pvcname: georchestra-core-geoserver-datadir
+  - dir:
+      name: geoserver_geodata
+      pvcname: georchestra-core-geoserver-geodata
+  - dir:
+      name: mviewer_conf
+      pvcname: mviewer-mviewer-conf
+  - dir:
+      name: wordpress_html_content
+      pvcname: wordpress-wordpress-html-content
+  # - dir:
+  #     name: logs/harvesters
+  #     pvcname: volumes-logs-harvesters

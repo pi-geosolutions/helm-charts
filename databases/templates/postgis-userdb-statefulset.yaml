@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "databases.fullname" . }}-postgis-userdb
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "databases.fullname" . }}-postgis-userdb
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "databases.selectorLabels" . | nindent 6 }}
+      app: postgis-userdb
+  template:
+    metadata:
+      labels:
+        {{- include "databases.selectorLabels" . | nindent 8 }}
+        app: postgis-userdb
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: postgresql-data
+        persistentVolumeClaim:
+          claimName: {{ include "databases.fullname" . }}-postgis-userdb-data
+      # - name: postgresql-data
+      #   hostPath:
+      #     path: {{ .Values.rootStoragePath }}/postgis_userdb_data
+      #     type: Directory
+      - name: pgtune
+        configMap:
+          name: {{ include "databases.fullname" . }}-postgis-userdb-pgtune
+      containers:
+      - name: postgis-userdb
+        image: {{ .Values.postgisUserdb.image.repository }}:{{ .Values.postgisUserdb.image.tag | default "latest" }}
+        imagePullPolicy: {{ .Values.postgisUserdb.image.pullPolicy | default "Always"}}
+        ports:
+          - containerPort: 5432
+        env:
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+          - name: LDAP_SERVER
+            value: {{ .Values.ldap.host | quote }}
+          - name: LDAP_BASEDN
+            value: {{ .Values.ldap.basedn | quote }}
+          - name: PGTUNE_FOLDER
+            value: "/cm/pgtune"
+          - name: POSTGRES_DB
+            valueFrom:
+              secretKeyRef:
+                  name: {{ .Values.postgisUserdb.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                  key: dbname
+                  optional: false
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                  name: {{ .Values.postgisUserdb.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                  key: user
+                  optional: false
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                  name: {{ .Values.postgisUserdb.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                  key: password
+                  optional: false
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        - name: pgtune
+          mountPath: /cm/pgtune
+          readOnly: true
+        resources:
+          {{- toYaml .Values.postgisUserdb.resources | nindent 12 }}
+        startupProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          failureThreshold: 30
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 10
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 10

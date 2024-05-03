@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "wordpress.fullname" . }}-mysql-db
+spec:
+  serviceName: {{ include "wordpress.fullname" . }}-database
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "wordpress.selectorLabels" . | nindent 6 }}
+      app: wordpress-mysql-db
+  template:
+    metadata:
+      labels:
+        {{- include "wordpress.selectorLabels" . | nindent 8 }}
+        app: wordpress-mysql-db
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: worpress-mysql-data
+        persistentVolumeClaim:
+          claimName: {{ include "wordpress.fullname" . }}-wordpress-mysql-data
+      # - name: worpress-mysql-data
+      #   hostPath:
+      #     path: {{ .Values.rootStoragePath }}/wordpress_mysql_data
+      #     type: Directory
+      containers:
+      - name: wordpress-mysql-db
+        image: {{ .Values.database.image | quote }}
+        args:
+        - --max-allowed-packet=64M
+        ports:
+          - containerPort: 3306
+        envFrom:
+          - secretRef:
+              name: {{ .Values.database.existingSecret.name | default (printf "%s-config-secret" (include "wordpress.fullname" .)) }}
+        volumeMounts:
+        - name: worpress-mysql-data
+          mountPath: /var/lib/mysql
+        resources:
+          {{- toYaml .Values.database.resources | nindent 12 }}
+        startupProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          failureThreshold: 30
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 10
+        readinessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 10

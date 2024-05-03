@@ -1,0 +1,11 @@
+{{- if .Values.postgisUserdb.pgtuneConfigMap -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "databases.fullname" . }}-postgis-userdb-pgtune
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+data:
+  pgtune.sql: |
+{{ .Values.postgisUserdb.pgtuneConfigMap | indent 4 }}
+{{- end }}

@@ -1,0 +1,81 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mviewer.fullname" . }}-elasticsearch
+  labels:
+    {{- include "mviewer.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.elasticsearch.replicaCount | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "mviewer.selectorLabels" . | nindent 6 }}
+      app: mviewer-elasticsearch
+  template:
+    metadata:
+      annotations:
+          {{- toYaml .Values.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "mviewer.selectorLabels" . | nindent 8 }}
+        app: mviewer-elasticsearch
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- /*
+      serviceAccountName: {{ include "mviewer.serviceAccountName" . }}
+      */}}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . |nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . |nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . |nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: es-data
+        persistentVolumeClaim:
+          claimName: {{ include "mviewer.fullname" . }}-es-data
+      - name: es-backups
+        persistentVolumeClaim:
+          claimName: {{ include "mviewer.fullname" . }}-es-backups
+      initContainers:
+      - name: init-sysctl-mapcount
+        image: busybox:1.27.2
+        command: ["sh", "-c", "sysctl -w vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      - name: init-ulimitn
+        image: busybox:1.27.2
+        command: ["sh", "-c", "ulimit -n 65536"]
+        securityContext:
+          privileged: true
+      containers:
+      - name: elasticsearch
+        image: {{ .Values.elasticsearch.image | quote }}
+        imagePullPolicy: {{ .Values.elasticsearch.imagePullPolicy  | default "IfNotPresent" }}
+        resources:
+          {{- toYaml .Values.elasticsearch.resources | nindent 10 }}
+        env:
+          - name: ES_JAVA_OPTS
+            value: "-Xms1G -Xmx1G"
+          - name: discovery.type
+            value: "single-node"
+          - name: path.repo
+            value: "/mnt/es_backups"
+        volumeMounts:
+        - name: es-data
+          mountPath: /usr/share/elasticsearch/data
+        - name: es-backups
+          mountPath: /mnt/es_backups
+
+{{- end }}

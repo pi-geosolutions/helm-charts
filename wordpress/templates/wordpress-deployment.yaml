@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wordpress.fullname" . }}-wordpress
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default "1" }}
+  selector:
+    matchLabels:
+      {{- include "wordpress.selectorLabels" . | nindent 6 }}
+      app: wordpress
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "wordpress.selectorLabels" . | nindent 8 }}
+        app: wordpress
+    spec:
+      securityContext: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: wordpress-html-content
+        persistentVolumeClaim:
+          claimName: {{ include "wordpress.fullname" . }}-wordpress-html-content
+      # - name: wordpress-html-content
+      #   hostPath:
+      #     path: {{ .Values.rootStoragePath }}/wordpress_html_content
+      #     type: Directory
+      containers:
+      - name: wordpress
+        image: {{ .Values.image | quote }}
+        workingDir: /var/www/html/home
+        ports:
+          - containerPort: 80
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        env:
+          - name: WORDPRESS_CONFIG_EXTRA
+            value: |
+              {{- .Values.extraConfig | nindent 14 }}
+          - name: WORDPRESS_DB_HOST
+            value: {{ include "wordpress.fullname" . }}-mysql-db
+          - name: WORDPRESS_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.database.existingSecret.name | default (printf "%s-config-secret" (include "wordpress.fullname" .)) }}
+                key: "MYSQL_DATABASE"
+                optional: false
+          - name: WORDPRESS_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.database.existingSecret.name | default (printf "%s-config-secret" (include "wordpress.fullname" .)) }}
+                key: "MYSQL_USER"
+                optional: false
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.database.existingSecret.name | default (printf "%s-config-secret" (include "wordpress.fullname" .)) }}
+                key: "MYSQL_PASSWORD"
+                optional: false
+        volumeMounts:
+        - name: wordpress-html-content
+          mountPath: /var/www/html

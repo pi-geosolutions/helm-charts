@@ -1,0 +1,257 @@
+# Default values for databases chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+# geOrchestra app database
+georchestraDatabase:
+  enabled: false
+  image:
+    repository: georchestra/database
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default latest
+    tag: "23.0.2"
+
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    postgresql:
+      size: 20Gi
+      pv_name: volumes-georchestra-postgresql
+  auth:
+    # DB creation options
+    postgres_db: georchestra
+    postgres_user: georchestra
+    postgres_password: secret_password
+    # existingSecret: my-db-password-secret
+
+  resources:
+    limits:
+      memory: "800Mi"
+      cpu: 1
+    requests:
+      memory: "512Mi"
+      cpu: 0.5
+
+  pgtuneConfigMap: |
+    -- DB Version: 11
+    -- OS Type: linux
+    -- DB Type: web
+    -- Total Memory (RAM): 512 MB
+    -- CPUs num: 4
+    -- Connections num: 50
+    -- Data Storage: ssd
+
+    ALTER SYSTEM SET
+     max_connections = '50';
+    ALTER SYSTEM SET
+     shared_buffers = '128MB';
+    ALTER SYSTEM SET
+     effective_cache_size = '384MB';
+    ALTER SYSTEM SET
+     maintenance_work_mem = '32MB';
+    ALTER SYSTEM SET
+     checkpoint_completion_target = '0.9';
+    ALTER SYSTEM SET
+     wal_buffers = '3932kB';
+    ALTER SYSTEM SET
+     default_statistics_target = '100';
+    ALTER SYSTEM SET
+     random_page_cost = '1.1';
+    ALTER SYSTEM SET
+     effective_io_concurrency = '200';
+    ALTER SYSTEM SET
+     work_mem = '1310kB';
+    ALTER SYSTEM SET
+     min_wal_size = '1GB';
+    ALTER SYSTEM SET
+     max_wal_size = '4GB';
+    ALTER SYSTEM SET
+     max_worker_processes = '4';
+    ALTER SYSTEM SET
+     max_parallel_workers_per_gather = '2';
+    ALTER SYSTEM SET
+     max_parallel_workers = '4';
+    ALTER SYSTEM SET
+     max_parallel_maintenance_workers = '2';
+
+
+# geodata DB for storing and publishing (geo)data
+postgisUserdb:
+  enabled: true
+  image:
+    repository: pigeosolutions/georchestra-postgis-userdb
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default latest
+    tag: "20211102-7824c30"
+
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    postgresql:
+      size: 50Gi
+      pv_name: postgis-userdb-data
+
+  auth:
+    # DB creation options
+    postgres_db: georchestra
+    postgres_user: georchestra
+    postgres_password: secret_password
+    # existingSecret: my-db-password-secret
+
+  resources:
+    limits:
+      memory: "3Gi"
+      cpu: 2
+    requests:
+      memory: "1.5Gi"
+      cpu: 0.5
+
+  pgtuneConfigMap: |
+    -- DB Version: 13
+    -- OS Type: linux
+    -- DB Type: dw
+    -- Total Memory (RAM): 1 GB
+    -- CPUs num: 4
+    -- Connections num: 100
+    -- Data Storage: ssd
+
+    ALTER SYSTEM SET
+     max_connections = '100';
+    ALTER SYSTEM SET
+     shared_buffers = '375MB';
+    ALTER SYSTEM SET
+     effective_cache_size = '1125MB';
+    ALTER SYSTEM SET
+     maintenance_work_mem = '192000kB';
+    ALTER SYSTEM SET
+     checkpoint_completion_target = '0.9';
+    ALTER SYSTEM SET
+     wal_buffers = '11520kB';
+    ALTER SYSTEM SET
+     default_statistics_target = '500';
+    ALTER SYSTEM SET
+     random_page_cost = '1.1';
+    ALTER SYSTEM SET
+     effective_io_concurrency = '200';
+    ALTER SYSTEM SET
+     work_mem = '1920kB';
+    ALTER SYSTEM SET
+     min_wal_size = '4GB';
+    ALTER SYSTEM SET
+     max_wal_size = '16GB';
+    ALTER SYSTEM SET
+     max_worker_processes = '2';
+    ALTER SYSTEM SET
+     max_parallel_workers_per_gather = '1';
+    ALTER SYSTEM SET
+     max_parallel_workers = '2';
+    ALTER SYSTEM SET
+     max_parallel_maintenance_workers = '1';
+
+# Datafeeder's database (postgis)
+datafeeder:
+  enabled: true
+  image:
+    repository: postgis/postgis
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default latest
+    tag: "13-3.1-alpine"
+
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    postgresql:
+      size: 50Gi
+      pv_name: datafeeder-data
+
+  auth:
+    # DB creation options
+    postgres_db: datafeeder
+    postgres_user: georchestra
+    postgres_password: secret_password
+    # existingSecret: my-db-password-secret
+
+  resources:
+    limits:
+      memory: "1.5Gi"
+      cpu: 1
+    requests:
+      memory: "600Mi"
+      cpu: 0.5
+
+  pgtuneConfigMap: |
+    -- DB Version: 13
+    -- OS Type: linux
+    -- DB Type: dw
+    -- Total Memory (RAM): 1 GB
+    -- CPUs num: 1
+    -- Connections num: 46
+    -- Data Storage: ssd
+
+    ALTER SYSTEM SET
+     max_connections = '46';
+    ALTER SYSTEM SET
+     shared_buffers = '256MB';
+    ALTER SYSTEM SET
+     effective_cache_size = '768MB';
+    ALTER SYSTEM SET
+     maintenance_work_mem = '128MB';
+    ALTER SYSTEM SET
+     checkpoint_completion_target = '0.9';
+    ALTER SYSTEM SET
+     wal_buffers = '7864kB';
+    ALTER SYSTEM SET
+     default_statistics_target = '500';
+    ALTER SYSTEM SET
+     random_page_cost = '1.1';
+    ALTER SYSTEM SET
+     effective_io_concurrency = '200';
+    ALTER SYSTEM SET
+     work_mem = '1424kB';
+    ALTER SYSTEM SET
+     huge_pages = 'off';
+    ALTER SYSTEM SET
+     min_wal_size = '4GB';
+    ALTER SYSTEM SET
+     max_wal_size = '16GB';
+
+# Both postgis DB and ldap2pg cron job will connect to ldap to get the users
+# info => need ldap config params
+ldap:
+  host: georchestra-core-ldap-svc
+  basedn: "dc=georchestra,dc=org"
+  port: "389"
+  auth:
+    existingSecret:
+      name: ksksecrets-ldap-envs
+      key: SLAPD_PASSWORD
+    admin_user: cn=admin,dc=georchestra,dc=org
+
+
+ldap2pg:
+  enabled: true
+  image: pigeosolutions/georchestra-ldap2pg:5.7-8b88fc02
+  schedule: "*/3 * * * *"
+  verbosity: "INFO"
+  dry: ""
+
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+tolerations: []
+
+affinity: {}

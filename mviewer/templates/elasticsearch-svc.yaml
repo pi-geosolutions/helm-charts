@@ -1,0 +1,14 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mviewer.fullname" . }}-es-svc
+  labels:
+    {{- include "mviewer.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 9200
+  selector:
+    {{- include "mviewer.selectorLabels" . | nindent 4 }}
+    app: mviewer-elasticsearch
+{{- end }}

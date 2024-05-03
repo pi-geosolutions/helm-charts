@@ -1,0 +1,81 @@
+{{- if and .Values.ldap2pg.enabled .Values.postgisUserdb.enabled -}}
+{{/*
+This job makes a synchronization between the LDAP roles and the postgis-userdb ACLs
+*/}}
+{{- $l2pg := .Values.ldap2pg -}}
+{{- $db := .Values.postgisUserdb -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "databases.fullname" . }}-ldap2pg
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $l2pg.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - name:  ldap2pg-cronjob
+            image: {{ $l2pg.image }}
+            imagePullPolicy: IfNotPresent
+            env:
+            # - name: PGDSN
+            #   value: {{ $l2pg.pgdsn | default "postgres://georchestra@postgis-userdb:5432/georchestra" | quote}}
+            - name: PGHOST
+              value: {{ include "databases.fullname" . }}-postgis-userdb-svc
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                    key: "dbname"
+                    optional: false
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                    key: "port"
+                    optional: true
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                    key: "user"
+                    optional: false
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name:  {{ $db.auth.existingSecret | default (printf "%s-postgis-userdb-secret" (include "databases.fullname" .)) }}
+                    key: "password"
+                    optional: false
+            - name: LDAPURI
+              value: {{ printf "ldap://%s:389" .Values.ldap.host | quote}}
+            - name: LDAP_PORT
+              value: {{ .Values.ldap.port | default "389" | quote }}
+            - name: LDAPBASEDN
+              value: {{ .Values.ldap.basedn | default "dc=georchestra,dc=org" | quote}}
+            - name: LDAPBINDDN
+              value: {{ .Values.ldap.auth.admin_user | default "cn=admin,dc=georchestra,dc=org" | quote}}
+            - name: LDAPPASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.ldap.auth.existingSecret.name | default "undefined" }}
+                    key: {{ .Values.ldap.auth.existingSecret.key }}
+                    optional: false
+            - name: VERBOSITY
+              value: {{ $l2pg.verbosity | default "INFO" | quote}}
+            - name: DRY
+              value: {{ $l2pg.dry | default "" | quote}}
+            - name: COLOR
+              value: "1"
+            - name: LDAP_ROLE_REGEX
+              value: '^PGSQL_SCHEMA_([A-Z][A-Z0-9-_]+)_(READER|WRITER|PUBLISHER)$'
+          restartPolicy: Never
+
+{{- end }}

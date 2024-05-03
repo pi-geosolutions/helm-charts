@@ -1,0 +1,22 @@
+{{- if .Values.evucsk.useGitLocalFolder }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "sk-harvesters.fullname" . }}-evucsk-data
+  labels:
+    {{- include "sk-harvesters.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sk-harvesters.fullname" . }}-evucsk
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.evucsk.storage.data.storage_class_name }}
+  storageClassName: {{ .Values.evucsk.storage.data.storage_class_name }}
+  {{- end }}
+  {{- if .Values.evucsk.storage.data.pv_name }}
+  volumeName: {{ .Values.evucsk.storage.data.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.evucsk.storage.data.size | default "50Mi" }}
+      
+{{- end }}

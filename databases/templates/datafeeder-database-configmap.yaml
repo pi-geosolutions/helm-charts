@@ -1,0 +1,11 @@
+{{- if .Values.datafeeder.pgtuneConfigMap -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "databases.fullname" . }}-datafeeder-database-pgtune
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+data:
+  pgtune.sql: |
+{{ .Values.datafeeder.pgtuneConfigMap | indent 4 }}
+{{- end }}

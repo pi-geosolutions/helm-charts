@@ -1,0 +1,152 @@
+# Default values for backups.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+globalConfig:
+  # hostname as it will be remembered by the restic backups
+  domainName: ksk-dev.pigeosolutions.fr
+
+  image: pigeosolutions/ssh-backup-toolbox
+  tag: 20211215-c6fd190
+
+  rootAuthorizedKeys: |
+      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDsBuvOvbquX5uX+UFvEG+9kqpTysDRMbfpAPM56N1UU jpommier@Thor
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFnNCwcAHFMNXS7tuwfwYV1G9xNFirvqTg8C/Tfmai/dycVuln50a7RZsx/MDkCZ6GaCp8EWeL2HkicghupkLK+Evbv0D4QSuz2UBlWTu68SlXdkZukuYEAi7brsW2IsJLvoVW24QoSMfsLdxskt5JOjYSyIL2ULBlOPIhnwDozeH/cKUQVY1KfIa8QtpjHIKjf7E36CIhiAVd1MySdWtHYkTBKDqenI9Vq/poJc9TMDNkyl10p66aaZMZSvPcMWamWrxM01iAgosQnG0aEz/DY60SOjHuPuvQUyNSyvJIzrHK7NwB/SriNZbaNBJd8ytp26B0whjrDddud+TZOjRN jean@Zeus
+
+  rootSshKeys:
+    existingSecret:
+      name: ksksecrets-backup-toolbox-root-ssh-keys
+      readOnly: true
+
+  restic:
+    existingSecret:
+      name: ksksecrets-restic-config
+
+  # To push metrics about the backups, you need to provide  this
+  # promPushgatewayUrl: url_to_prometheus_pushgateway
+
+  resources:
+    limits:
+      memory: "500Mi"
+      cpu: 100m
+    requests:
+      memory: "100Mi"
+      cpu: 10m
+
+restoreConsole:
+  enabled: true
+  storage:
+    # It supposes that the volumes are stored locally all as subfolders of
+    # this one. You need to create a corresponding local_path PV for it to work
+    # properly. This is not a really clean hack.
+    # In case you decide to use distributed volumes, you will want
+    # to list them all here in place of this single declaration
+    # storage_class_name: local-storage
+    root_storage:
+      pv_name: root-storage
+      size: 100Gi
+
+  # Used by the restore console. Used to mount all the necessary volumes at once
+  # (declare the parent folder)
+  # _Should not be used anymore_
+  rootStoragePath: /mnt/ksk-dev
+
+# Configure the schedule backups (cronjobs)
+backupJobs:
+  enabled: false
+  ldap:
+    enabled: true
+    schedule: "0 0 * * *"
+    # Set to true if you want to only dump the DB, but not save it with restic
+    dump_only: false
+    auth:
+      existingSecret:
+        name: ksksecrets-ldap-envs
+        key: SLAPD_PASSWORD
+      host: georchestra-core-ldap-svc
+      port: 389
+      admin_user: cn=admin,dc=georchestra,dc=org
+
+  georchestraDatabase:
+    enabled: true
+    schedule: "15 0 * * *"
+    # Set to true if you want to only dump the DB, but not save it with restic
+    dump_only: false
+    host: databases-georchestra-database-svc
+    auth:
+      existingSecret:
+        name: ksksecrets-georchestra-database-config
+        keys:
+          user: "user"
+          password: "password"
+
+  postgisUserdb:
+    enabled: true
+    schedule: "30 0 * * *"
+    # Set to true if you want to only dump the DB, but not save it with restic
+    dump_only: false
+    host: databases-postgis-userdb-svc
+    auth:
+      existingSecret:
+        name: ksksecrets-postgis-userdb
+        keys:
+          user: "user"
+          password: "password"
+
+  datafeederdb:
+    enabled: true
+    schedule: "50 0 * * *"
+    # Set to true if you want to only dump the DB, but not save it with restic
+    dump_only: false
+    host: database-datafeeder-database-svc
+    auth:
+      existingSecret:
+        name: ksksecrets-postgis-userdb
+        keys:
+          user: "user"
+          password: "password"
+
+  wordpressMysql:
+    enabled: true
+    schedule: "00 1 * * *"
+    # Set to true if you want to only dump the DB, but not save it with restic
+    dump_only: false
+    host: wordpress-mysql-db
+    auth:
+      existingSecret:
+        name: ksksecrets-wordpress-db
+        keys:
+          password: "MYSQL_ROOT_PASSWORD"
+
+  # Backup all the filesystem folders stored in root volume (defined by
+  # backup-parent-volume-pvc, uses rootStoragePath above )
+  volumes:
+    enabled: true
+    schedule: "10 1 * * *"
+
+geoserverDatadirGitBackup:
+  enabled: false
+  image: pigeosolutions/docker-volume-git-backup
+  tag: 20210920-1041-07ac4b3
+  # The PVC to backup
+  pvcName: georchestra-core-geoserver-datadir
+  gitConfig:
+    rsaDeployKey:
+      # You are expected to provide at least one of the existing secret or the value. It will look 
+      # first for the secret, then fallback on the value if secret is not provided
+      existingSecret:
+        name: mysecretname
+        key: nameofthersaprivatekey
+      value: |
+        paste your rsa private key here    
+    username: jeanpommier
+    email: jean.pommier@pi-geosolutions.fr
+    remote:
+      url: git@gitlab.com:po-kraj-sk/psk_geoserver_datadir.git
+      name: origin
+      branch: prod
+    commitMessage: printf "updateSequence "; grep updateSequence global.xml|sed -e 's#.*ce>\(.*\)</up.*#\1#'
+  resources: {}

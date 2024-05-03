@@ -1,0 +1,11 @@
+{{- if  .Values.globalConfig.rootAuthorizedKeys }}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "backups.fullname" . }}-backup-toobox-authorized-keys
+data:
+  authorized_keys: |
+{{ .Values.globalConfig.rootAuthorizedKeys | indent 4 }}
+
+{{- end }}

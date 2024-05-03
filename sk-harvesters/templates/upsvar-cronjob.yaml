@@ -1,0 +1,61 @@
+{{- if .Values.upsvar.enabled }}
+# Labour office data harvester
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "sk-harvesters.fullname" . }}-upsvar
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ .Values.upsvar.schedule | default "32 02 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name:  logs
+            persistentVolumeClaim:
+              claimName: {{ include "sk-harvesters.fullname" . }}-logs
+          # - name: logs
+          #   hostPath:
+          #     path: {{ .Values.rootStoragePath }}/logs
+          #     type: Directory
+          containers:
+          - name:  harvester-upsvar
+            image: {{ .Values.upsvar.image | default "registry.gitlab.com/po-kraj-sk/upsvar-harvester/upsvar-harvester:latest"}}
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                    name: {{ .Values.upsvar.databaseConnectionString.existingSecret.name | default (printf "%s-sk-harvesters-common-config" (include "sk-harvesters.fullname" .)) }}
+                    key: {{ .Values.upsvar.databaseConnectionString.existingSecret.key }}
+                    optional: false
+            - name: DB_SCHEMA
+              value: {{ .Values.upsvar.dbschema | default "laboroffice" | quote }}
+            - name: LOCATIONS_REGEX_FILTER
+              value: {{ .Values.upsvar.locationsregexfilter | quote }}
+            - name: INDEX_COLUMNS
+              value: {{ .Values.upsvar.indexcolumns | default "period,kod_nuts" | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.upsvar.loglevel | default "INFO" | quote }}
+            - name: LOG_FILE
+              value: {{ .Values.upsvar.logfile | default "/app/logs/upsvar_harvester.log" }}
+            - name: BE_CAREFUL
+              value: {{ .Values.upsvar.becareful | default "True" | quote }}
+            - name: RETRY_CONNECT
+              value: {{ .Values.upsvar.retry_connect | default "3" | quote }}
+            - name: RETRY_BACKOFF
+              value: {{ .Values.upsvar.retry_backoff | default "0.25" | quote }}
+            - name: PROM_PUSHGATEWAY_URI
+              value: {{ .Values.promPushgatewayUrl | default "" }}
+            volumeMounts:
+            - name: logs
+              mountPath: /app/logs
+          restartPolicy: Never
+{{- end }}

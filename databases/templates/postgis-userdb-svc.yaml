@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "databases.fullname" . }}-postgis-userdb-svc
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 5432
+  selector:
+    {{- include "databases.selectorLabels" . | nindent 4 }}
+    app: postgis-userdb
+
+---
+
+# Provide legacy service name for backward compatibility
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgis-userdb
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 5432
+  selector:
+    {{- include "databases.selectorLabels" . | nindent 4 }}
+    app: postgis-userdb

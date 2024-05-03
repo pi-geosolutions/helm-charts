@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backups.fullname" . }}-ssh-backup-toolbox
+  labels:
+    {{- include "backups.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "backups.fullname" . }}-backups
+spec:
+  selector:
+    matchLabels:
+      {{- include "backups.selectorLabels" . | nindent 6 }}
+      app: ssh-backup-toolbox
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "backups.selectorLabels" . | nindent 8 }}
+        app: ssh-backup-toolbox
+    spec:
+      securityContext: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+      - name: backup-toolbox-root-ssh-keys
+        secret:
+          secretName: {{ .Values.globalConfig.rootSshKeys.existingSecret.name }}
+      {{- end }}{{ end }}
+      {{- if .Values.globalConfig.rootAuthorizedKeys }}
+      - name: backup-toobox-authorized-keys
+        configMap:
+          name: {{ include "backups.fullname" . }}-backup-toobox-authorized-keys
+      {{- end }}
+      {{/*
+        It supposes that the volumes are stored locally all as subfolders of
+        this one. In case you decide to use distributed volumes, you will want
+        to list them all here in place of this single declaration
+      */}}
+      - name: mnt
+        persistentVolumeClaim:
+          claimName: {{ include "backups.fullname" . }}-mnt
+        # hostPath:
+        #   path: {{ .Values.restoreConsole.rootStoragePath }}/
+        #   type: Directory
+      - name: tmp
+        emptyDir: {}
+      containers:
+      - name: ssh-backup-toolbox
+        image: {{ .Values.globalConfig.image }}:{{ .Values.globalConfig.tag }}
+        resources:
+          {{- toYaml .Values.globalConfig.resources | nindent 10 }}
+        {{- if .Values.globalConfig.restic.existingSecret }}
+        envFrom:
+          - secretRef:
+              name: {{ .Values.globalConfig.restic.existingSecret.name | quote }}
+        {{- end }}
+        env:
+          - name: HOST
+            value: {{ .Values.globalConfig.domainName | quote }}
+          {{- if .Values.globalConfig.rootAuthorizedKeys }}
+          - name: SSH_ROOT_AUTHORIZED_KEYS_FILE
+            value: /configmaps/authorized-keys/authorized_keys
+          {{- end }}
+          {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+          - name: ROOT_SSH_KEYS_PATH
+            value: /secrets/backup-toolbox-root-ssh-keys/
+          {{- end }}{{ end }}
+        volumeMounts:
+        {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+        - name: backup-toolbox-root-ssh-keys
+          mountPath: /secrets/backup-toolbox-root-ssh-keys
+          readOnly: true
+        {{- end }}{{ end }}
+        {{- if .Values.globalConfig.rootAuthorizedKeys }}
+        - name: backup-toobox-authorized-keys
+          mountPath: /configmaps/authorized-keys
+          readOnly: true
+        {{- end }}
+        - name: mnt
+          mountPath: /mnt
+        - name: tmp
+          mountPath: /tmp
+        readinessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 18
+        livenessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          failureThreshold: 2

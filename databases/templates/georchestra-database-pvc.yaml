@@ -1,0 +1,20 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "databases.fullname" . }}-georchestra-database-data
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "databases.fullname" . }}-georchestra-database
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.georchestraDatabase.storage.storage_class_name }}
+  storageClassName: {{ .Values.georchestraDatabase.storage.storage_class_name }}
+  {{- end }}
+  {{- if .Values.georchestraDatabase.storage.postgresql.pv_name }}
+  volumeName: {{ .Values.georchestraDatabase.storage.postgresql.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.georchestraDatabase.storage.postgresql.size }}

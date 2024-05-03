@@ -1,0 +1,20 @@
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "databases.fullname" . }}-datafeeder-database-data
+  labels:
+    {{- include "databases.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "databases.fullname" . }}-datafeeder-database
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.datafeeder.storage.storage_class_name }}
+  storageClassName: {{ .Values.datafeeder.storage.storage_class_name }}
+  {{- end }}
+  {{- if .Values.datafeeder.storage.postgresql.pv_name }}
+  volumeName: {{ .Values.datafeeder.storage.postgresql.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.datafeeder.storage.postgresql.size }}

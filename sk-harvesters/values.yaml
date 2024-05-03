@@ -1,0 +1,86 @@
+# Default values for sk-harvesters.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+# promPushgatewayUrl: pushgateway-prometheus-pushgateway.monitoring.svc:9091
+
+storage:
+  logs: # Volume used to persist logs from the sk-harvesters
+    # storage_class_name: localstorage
+    pv_name: volumes-logs-sk-harvesters
+    # size: 50Mi
+
+
+statsoffice:
+  enabled: true
+  image: registry.gitlab.com/po-kraj-sk/so-harvester/so-harvester:20231025-0c629fa
+  # cron-like schedule
+  schedule: 43 01 * * 2
+  # dbschema: statsoffice
+  cubeslist: cr3002rr,np3110rr,og3010rr,og3011rr,om7009rr,om7010rr,om7011rr,om7038rr,pr3113rr,pr3113rr,st3006rr,zd3002rr,om7052rr,om7005rr
+  locationsregexfilter: ^(SK042.+|M|V|SK0|SK04)$$
+  contactEmail: admin@geoportalksk.sk
+  # indexcolumns: rok,obd
+  # loglevel: INFO
+  # becareful: True
+  # logfile: /app/logs/so_harvester.log
+  databaseConnectionString:
+    existingSecret:
+      name: "ksksecrets-sk-harvesters-common-config"
+      key: "DB_CONNECTION_STRING"
+
+upsvar:
+  enabled: true
+  image: registry.gitlab.com/po-kraj-sk/upsvar-harvester/upsvar-harvester:20231025-889d3ce
+  # cron-like schedule
+  schedule: 53 02 * * *
+  # dbschema: laboroffice
+  locationsregexfilter: ^(SK042.+|SK0|SK0[0-9]{2})$$
+  # indexcolumns: period,kod_nuts
+  # loglevel: INFO
+  # becareful: True
+  # retry_connect: 3
+  # retry_backoff: 0.25
+  # logfile: /app/logs/upsvar_harvester.log
+  databaseConnectionString:
+    existingSecret:
+      name: "ksksecrets-sk-harvesters-common-config"
+      key: "DB_CONNECTION_STRING"
+
+
+evucsk:
+  enabled: true
+  image: registry.gitlab.com/po-kraj-sk/evucsk-harvester/evucsk-harvester:20231025-70e42ac
+  # cron-like schedule
+  schedule: 23 05,12 * * *
+  # dbschema: evucsk
+  useGitLocalFolder: true
+  # enableLekarne: "True"
+  # enablePohotovost: "True"
+  # enableZariadenia: "True"
+  enableSluzby: "False"
+  # loglevel: INFO
+  # becareful: True
+  # retry_connect: 3
+  # retry_backoff: 0.25
+  # logfile: /app/logs/evucsk_harvester.log
+
+  storage:
+    data: # Volume used to persist logs from the sk-harvesters
+      # storage_class_name: localstorage
+      pv_name: volumes-evucsk-data
+      # size: 50Mi
+
+  evucskCredentials:
+      existingSecret:
+        name: "ksksecrets-sk-harvesters-evucsk-credentials"
+        key_id: EVUCSK_ID
+        key_user: EVUCSK_USERNAME
+        key_password: EVUCSK_PASSWORD
+  databaseConnectionString:
+    existingSecret:
+      name: "ksksecrets-sk-harvesters-common-config"
+      key: "DB_CONNECTION_STRING"

@@ -1,0 +1,80 @@
+
+{{- $app := .Values.geoserverDatadirGitBackup -}}
+
+{{- if $app.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backups.fullname" . }}-geoserver-git-backup
+  labels:
+    {{- include "backups.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "backups.fullname" . }}-backups
+spec:
+  selector:
+    matchLabels:
+      {{- include "backups.selectorLabels" . | nindent 6 }}
+      app: geoserver-git-backup
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "backups.selectorLabels" . | nindent 8 }}
+        app: geoserver-git-backup
+    spec:
+      securityContext: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: geoserver-datadir
+        persistentVolumeClaim:
+          claimName: {{ $app.pvcName }}
+      containers:
+      - name: docker-volume-git-backup 
+        image: {{ $app.image }}:{{ $app.tag }}
+        resources:
+          {{- toYaml $app.resources | nindent 10 }}
+        env:
+          - name: GIT_USERNAME
+            value: {{ $app.gitConfig.username  | quote }}
+          - name: GIT_EMAIL
+            value: {{ $app.gitConfig.email  | quote }}
+          - name: REMOTE_URL
+            value: {{ $app.gitConfig.remote.url  | quote }}
+          - name: REMOTE_NAME
+            value: {{ $app.gitConfig.remote.name  | quote }}
+          - name: REMOTE_BRANCH
+            value: {{ $app.gitConfig.remote.branch  | quote }}
+          - name: GIT_COMMIT_MESSAGE
+            value: {{ $app.gitConfig.commitMessage  | quote }}
+          - name: WATCH_FILE
+            value: "global.xml"
+          - name: GIT_RSA_DEPLOY_KEY
+            {{- if $app.gitConfig.rsaDeployKey.existingSecret }}
+            valueFrom:
+              secretKeyRef:
+                  name: {{ $app.gitConfig.rsaDeployKey.existingSecret.name }}
+                  key: {{ $app.gitConfig.rsaDeployKey.existingSecret.key }}
+                  optional: false
+            {{- else }}
+            value: {{ $app.gitConfig.rsaDeployKey.value }}
+            {{- end }}
+        volumeMounts:
+        - name: geoserver-datadir
+          mountPath: /var/local/data
+        livenessProbe:
+          exec:
+            command:
+            - /usr/bin/git
+            - fetch
+          initialDelaySeconds: 5
+          periodSeconds: 60
+          failureThreshold: 5
+          timeoutSeconds: 10
+
+{{- end }}

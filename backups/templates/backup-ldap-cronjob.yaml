@@ -1,0 +1,83 @@
+
+{{- if and .Values.backupJobs.enabled .Values.backupJobs.ldap.enabled -}}
+{{/*
+Make a dump of the LDAP database
+*/}}
+{{- $ldap := .Values.backupJobs.ldap -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "backups.fullname" . }}-backup-ldap
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $ldap.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+          - name: backup-toolbox-root-ssh-keys
+            secret:
+              secretName: {{ .Values.globalConfig.rootSshKeys.existingSecret.name }}
+          {{- end }}{{ end }}
+          - name: backups-dbs
+            emptyDir: {}
+            # hostPath:
+            #   path: /backups/dbs
+            #   type: DirectoryOrCreate
+          containers:
+          - name:  ldap-backup-cronjob
+            image: {{ .Values.globalConfig.image }}:{{ .Values.globalConfig.tag }}
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - /entrypoint.sh; /root/scripts/backup-georchestra-ldap.sh
+            {{- if .Values.globalConfig.restic.existingSecret }}
+            envFrom:
+              - secretRef:
+                  name: {{ .Values.globalConfig.restic.existingSecret.name | quote }}
+            {{- end }}
+            env:
+            - name: HOST
+              value: {{ .Values.globalConfig.domainName | quote }}
+            - name: LDAP_HOST
+              value: {{ $ldap.auth.host | quote }}
+            - name: LDAP_PORT
+              value: {{ $ldap.auth.port | quote }}
+            - name: LDAP_ADMIN
+              value: {{ $ldap.auth.admin_user | quote }}
+            - name: LDAP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                    name: {{ $ldap.auth.existingSecret.name | default (printf "%s-georchestra-ldap-secret" (include "backups.fullname" .)) }}
+                    key: {{ $ldap.auth.existingSecret.key }}
+                    optional: false
+            - name: DUMP_ONLY
+              value: {{ $ldap.dump_only | quote }}
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: ROOT_SSH_KEYS_PATH
+              value: /secrets/backup-toolbox-root-ssh-keys/
+            {{- end }}{{ end }}
+            {{- if .Values.globalConfig.promPushgatewayUrl }}
+            - name: PUSHGATEWAY_URI
+              value: {{ .Values.globalConfig.promPushgatewayUrl | quote }}
+            {{- end }}
+            volumeMounts:
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: backup-toolbox-root-ssh-keys
+              mountPath: /secrets/backup-toolbox-root-ssh-keys
+              readOnly: true
+            {{- end }}{{ end }}
+            - name: backups-dbs
+              mountPath: /dbs
+          restartPolicy: Never
+
+{{- end }}

@@ -1,0 +1,72 @@
+
+{{- if and .Values.backupJobs.enabled .Values.backupJobs.volumes.enabled -}}
+{{/*
+Make a dump of the FS volumes
+*/}}
+{{- $vol := .Values.backupJobs.volumes -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "backups.fullname" . }}-backup-volumes
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $vol.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+          - name: backup-toolbox-root-ssh-keys
+            secret:
+              secretName: {{ .Values.globalConfig.rootSshKeys.existingSecret.name }}
+          {{- end }}{{ end }}
+          - name: mnt
+            persistentVolumeClaim:
+              claimName: {{ include "backups.fullname" . }}-mnt
+            # hostPath:
+            #   path: {{ .Values.restoreConsole.rootStoragePath }}/
+            #   type: Directory
+          containers:
+          - name:  volumes-backup-cronjob
+            image: {{ .Values.globalConfig.image }}:{{ .Values.globalConfig.tag }}
+            imagePullPolicy: IfNotPresent
+            command:
+            - bash
+            - -c
+            - /entrypoint.sh; /root/scripts/backup-using-restic.sh
+            {{- if .Values.globalConfig.restic.existingSecret }}
+            envFrom:
+              - secretRef:
+                  name: {{ .Values.globalConfig.restic.existingSecret.name | quote }}
+            {{- end }}
+            env:
+            - name: HOST
+              value: {{ .Values.globalConfig.domainName | quote }}
+            - name: CLEAN
+              value: "true"
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: ROOT_SSH_KEYS_PATH
+              value: /secrets/backup-toolbox-root-ssh-keys/
+            {{- end }}{{ end }}
+            {{- if .Values.globalConfig.promPushgatewayUrl }}
+            - name: PUSHGATEWAY_URI
+              value: {{ .Values.globalConfig.promPushgatewayUrl | quote }}
+            {{- end }}
+            volumeMounts:
+            {{- if .Values.globalConfig.rootSshKeys }}{{ if .Values.globalConfig.rootSshKeys.existingSecret }}
+            - name: backup-toolbox-root-ssh-keys
+              mountPath: /secrets/backup-toolbox-root-ssh-keys
+              readOnly: true
+            {{- end }}{{ end }}
+            - name: mnt
+              mountPath: /mnt
+          restartPolicy: Never
+
+{{- end }}

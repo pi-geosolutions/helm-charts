@@ -1,0 +1,21 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mviewer.fullname" . }}-es-data
+  labels:
+    {{- include "mviewer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mviewer.fullname" . }}-mviewer
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.elasticsearch.storage.storage_class_name }}
+  storageClassName: {{ .Values.elasticsearch.storage.storage_class_name }}
+  {{- end }}
+  {{- if .Values.elasticsearch.storage.es_data.pv_name }}
+  volumeName: {{ .Values.elasticsearch.storage.es_data.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.elasticsearch.storage.es_data.size }}
+{{- end }}

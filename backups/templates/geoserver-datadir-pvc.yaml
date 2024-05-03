@@ -1,0 +1,21 @@
+{{- if .Values.geoserverDatadirGitBackup.enabl -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "backups.fullname" . }}-geoserver-datadir
+  labels:
+    {{- include "backups.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "backups.fullname" . }}-backups
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.geoserverDatadirGitBackup.storage.storage_class_name }}
+  storageClassName: {{ .Values.geoserverDatadirGitBackup.storage.storage_class_name }}
+  {{- end }}
+  {{- if .Values.geoserverDatadirGitBackup.storage.pv_name }}
+  volumeName: {{ .Values.geoserverDatadirGitBackup.storage.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.geoserverDatadirGitBackup.storage.size }}
+{{- end }}

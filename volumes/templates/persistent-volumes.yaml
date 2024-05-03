@@ -1,0 +1,27 @@
+{{- range .Values.directories }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "volumes.fullname" $ }}-{{ .dir.name | replace "_" "-" | replace "/" "-"}}
+spec:
+  capacity:
+    storage: {{ .dir.size | default "2Gi" }}
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-path
+  local:
+    path: {{ $.Values.rootStoragePath }}/{{ .dir.name }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: georchestra
+          operator: In
+          values:
+          - "true"
+
+---
+
+{{- end }}

@@ -1,0 +1,235 @@
+# Default values for mviewer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nodeSelector:
+  georchestra: "true"
+
+storage:
+  # storage_class_name: local-storage
+  mviewer_conf:
+    # pv_name: mviewer-conf
+    size: 50Mi
+  mviewerstudio_conf:
+    # pv_name: mviewer-conf
+    size: 50Mi
+
+mviewer:
+  replicaCount: 1
+  # image: mviewer/mviewer:stable
+  # imagePullPolicy: IfNotPresent
+  resources: {}
+    # limits:
+    #   memory: "100Mi"
+    #   cpu: 50m
+    # requests:
+    #   memory: "50Mi"
+    #   cpu: 10m
+
+# enable ES instance if you want search capacity over some datasets (need to be manually 
+# indexed into ES cluster)
+# You will also probably want to enable ingress (see below) to provide 
+# a publicly accessible endpoint to the ES service
+elasticsearch:
+  enabled: false
+  replicaCount: 1
+  image: elasticsearch:7.16.2
+  # imagePullPolicy: Always
+  resources: {}
+  # resources:
+  #   limits:
+  #     cpu: 500m
+  #     memory: 1.5Gi
+  #   requests:
+  #     cpu: 250m
+  #     memory: 500Mi
+  storage:
+    # storage_class_name: local-storage
+    es_data:
+      # pv_name: es-data
+      size: 200Mi
+    es_backups:
+      # pv_name: es-backups
+      size: 200Mi
+
+
+studio:
+  enabled: true
+  replicaCount: 1
+  # image: mviewer/mviewerstudio:python-stable
+  image: mviewer/mviewerstudio:python-stable
+  # imagePullPolicy: IfNotPresent
+  resources: {}
+    # limits:
+    #   memory: "200Mi"
+    #   cpu: 50m
+    # requests:
+    #   memory: "100Mi"
+    #   cpu: 10m
+  resetConfig: true
+  configurationConfigMap: |
+    {
+        "app_conf": {
+            "studio_title": "KSK mviewer Studio",
+            "mviewer_version":  "3.9",
+            "mviewerstudio_version":  "4",
+            "api": "api/app",
+            "store_style_service": "api/style",
+            "mviewer_instance": "/mviewer/",
+            "publish_url": "/mviewer/?config=apps/published/{{config}}.xml",
+            "conf_path_from_mviewer": "apps/drafts/",
+            "mviewer_short_url": {
+                "used": true,
+                "apps_folder": "drafts",
+                "public_folder": "published"
+            },
+            "external_themes": {
+                "used": true,
+                "url": "https://geobretagne.fr/minicatalog/csv"
+            },
+            "user_info": "api/user",
+            "proxy": "proxy/?url=",
+            "user_info_visible": true,
+            "app_form_placeholders": {
+                "app_title": "KSK map",
+                "logo_url": "https://geoportalksk.sk/header/img/logo.png",
+                "help_file": "mviewer_help.html"
+            },
+            "map": {
+              "center": [2367000, 6227000],
+              "zoom": 10
+            },
+            "baselayers": {
+                "positron": {
+                    "id": "positron",
+                    "thumbgallery": "img/basemap/positron.png",
+                    "title": "CartoDb",
+                    "label": "Positron",
+                    "type": "OSM",
+                    "url": "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                    "attribution": "Map tiles by  <a href=\"https://cartodb.com/attributions\">CartoDb</a>, under  <a href=\"https://creativecommons.org/licenses/by/3.0/\">CC BY 3.0 </a>"
+                },
+                "darkmatter": {
+                    "id": "darkmatter",
+                    "thumbgallery": "img/basemap/darkmatter.png",
+                    "title": "CartoDb",
+                    "label": "Dark Matter",
+                    "type": "OSM",
+                    "url": "https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+                    "maxzoom": "20",
+                    "attribution": "Map tiles by  <a href=\"https://cartodb.com/attributions\">CartoDb</a>, under  <a href=\"https://creativecommons.org/licenses/by/3.0/\">CC BY 3.0 </a>"
+                },
+              "stamen1": {
+                  "id": "stamen1",
+                  "thumbgallery": "img/basemap/toner-lite.png",
+                  "title": "Stamen Design",
+                  "label": "Toner-lite",
+                  "type": "OSM",
+                  "url": "http://{a-d}.tile.stamen.com/toner-lite/{z}/{x}/{y}.png",
+                  "maxzoom": "20",
+                  "attribution": "Map tiles by  <a href=\"http://stamen.com/\">Stamen Design </a>, under  <a href=\"http://creativecommons.org/licenses/by/3.0/\">CC BY 3.0 </a>"
+              },
+              "stamen2": {
+                  "id": "stamen2",
+                  "thumbgallery": "img/basemap/watercolor.jpg",
+                  "title": "Stamen Design",
+                  "label": "Watercolor",
+                  "type": "OSM",
+                  "url": "http://{a-c}.tile.stamen.com/watercolor/{z}/{x}/{y}.jpg",
+                  "maxzoom": "20",
+                  "attribution": "Map tiles by  <a href=\"http://stamen.com/\">Stamen Design </a>, under  <a href=\"http://creativecommons.org/licenses/by/3.0/\">CC BY 3.0 </a>"
+              },
+                "esriworldimagery": {
+                    "id": "esriworldimagery",
+                    "thumbgallery": "img/basemap/esriworldwide.jpg",
+                    "title": "Esri",
+                    "label": "Esri world imagery",
+                    "type": "OSM",
+                    "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                    "attribution": "<a href=\"https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9\" target=\"_blank\" >Esri world imagery</a>"
+                },
+              "osm": {
+                "id": "osm",
+                "thumbgallery": "img/basemap/osm.png",
+                "title": "OSM",
+                "label": "OpenStreetMap",
+                "type": "OSM",
+                "url": "https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                "attribution": "Données : les contributeurs d'<a href=\"https://www.openstreetmap.org/\" target=\"_blank\">OpenStreetMap </a><a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">ODbL </a>"
+              }
+            },
+            "data_providers": {
+              "csw" : [
+                  {
+                      "title" : "KSK geo-catalog",
+                      "url": "https://geoportalksk.sk/geonetwork/srv/fre/csw",
+                      "baseref": "https://geoportalksk.sk/geonetwork/srv/eng/catalog.search?node=srv#/metadata/"
+                  }, {
+                      "title" : "PSK geo-catalog",
+                      "url": "https://geopresovregion.sk/geonetwork/srv/fre/csw",
+                      "baseref": "https://geopresovregion.sk/geonetwork/srv/eng/catalog.search?node=srv#/metadata/"
+                  }
+              ],
+              "wms" : [
+                  {
+                      "title" : "KSK WMS server",
+                      "url": "https://geoportalksk.sk/geoserver/wms"
+                  },{
+                      "title" : "PSK WMS server",
+                      "url": "https://geopresovregion.sk/geoserver/wms"
+                  }
+              ]
+            },
+            "default_params": {
+                "layer": {
+                    "info_format": "text/html"
+                }
+            }
+        }
+    }
+
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+tolerations: []
+
+affinity: {}
+
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /mviewer/_search
+          pathType: Prefix
+          svcPort: 9200
+          svcName: mviewer-es-svc
+    - host: chart-example.local
+      paths:
+        - path: /mviewer
+          pathType: Prefix
+          svcPort: 80
+          svcName: }mviewer-svc
+    - host: chart-example.local
+      paths:
+        - path: /mviewerstudio
+          pathType: Prefix
+          svcPort: 8000
+          svcName: mviewer-studio-svc
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local

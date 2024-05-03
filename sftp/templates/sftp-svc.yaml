@@ -1,0 +1,16 @@
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh-ldappam-lb
+  labels:
+    {{- include "sftp.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: {{ .Values.sshExternalPort | default 2225 }}
+      targetPort: 22
+  selector:
+    {{- include "sftp.selectorLabels" . | nindent 4 }}
+    app: ssh-ldappam

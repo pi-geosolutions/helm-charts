@@ -1,0 +1,21 @@
+{{- if and .Values.pvc.georchestra_postgresql_data.enabled -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "volumes.fullname" . }}-georchestra-postgresql
+  labels:
+    {{- include "volumes.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "volumes.fullname" . }}-georchestra-postgresql
+spec:
+  accessModes:
+  - ReadWriteOnce
+  {{- if .Values.pvc.storage_class_name }}
+  storageClassName: {{ .Values.pvc.storage_class_name }}
+  {{- end }}
+  {{- if .Values.pvc.georchestra_postgresql_data.pv_name }}
+  volumeName: {{ include "volumes.fullname" . }}-{{ .Values.pvc.georchestra_postgresql_data.pv_name }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.pvc.georchestra_postgresql_data.size }}
+{{- end }}

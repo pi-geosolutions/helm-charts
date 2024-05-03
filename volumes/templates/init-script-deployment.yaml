@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "volumes.fullname" . }}-init-container
+  labels:
+    {{- include "volumes.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "volumes.fullname" . }}-init
+spec:
+  selector:
+    matchLabels:
+      {{- include "volumes.selectorLabels" . | nindent 6 }}
+      app: init-container
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "volumes.selectorLabels" . | nindent 8 }}
+        app: init-container
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: mnt
+        # persistentVolumeClaim:
+        #   claimName: {{ include "volumes.fullname" . }}-mnt
+        hostPath:
+          path: {{ .Values.rootStoragePath }}/
+          type: Directory
+      - name: init-volumes
+        configMap:
+          name: {{ include "volumes.fullname" . }}-init-script
+          defaultMode: 0755
+
+      initContainers:
+      - name: volumes-init
+        image: busybox
+        command:
+        - sh
+        - /scripts/volumes-init.sh
+        volumeMounts:
+        - name: mnt
+          mountPath: /mnt
+        - name: init-volumes
+          mountPath: /scripts
+      containers:
+      - name: volumes-idle
+        image: busybox
+        command:
+        - tail
+        - -f
+        - /dev/null
