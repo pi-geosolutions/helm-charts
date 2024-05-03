@@ -215,19 +215,19 @@ ingress:
       paths:
         - path: /mviewer/_search
           pathType: Prefix
-          svcPort: 9200
+          svcPort: "9200"
           svcName: mviewer-es-svc
     - host: chart-example.local
       paths:
         - path: /mviewer
           pathType: Prefix
-          svcPort: 80
-          svcName: }mviewer-svc
+          svcPort: "80"
+          svcName: mviewer-svc
     - host: chart-example.local
       paths:
         - path: /mviewerstudio
           pathType: Prefix
-          svcPort: 8000
+          svcPort: "8000"
           svcName: mviewer-studio-svc
   tls: []
   #  - secretName: chart-example-tls
