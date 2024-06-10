@@ -1,0 +1,58 @@
+
+{{- $app := .Values.backend -}}
+{{ if $app.cronjob.enabled }}
+{{/*
+Run backend scripts
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-crontask
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $app.cronjob.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $app.securityContext }}
+          securityContext: 
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name: hyfaa-scheduler-data
+            persistentVolumeClaim:
+              claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+          containers:
+          - name:  backend-crontask
+            image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+            imagePullPolicy:  {{ $app.image.pullPolicy }}
+            command:
+            - /hyfaa-backend/app/scripts/hyfaa_netcdf2DB.py
+            - /hyfaa-scheduler/data/
+            - --commit_page_size
+            - 50
+            envFrom:
+          - secretRef:
+              {{- if hasKey $app.auth "existingSecret" }}
+              name: {{ $app.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-db-secret
+              {{- end }}
+            env:
+              - name: FLASK_CONFIGURATION
+                value: production
+              - name: SCRIPT_CONFIG_PATH
+                value: conf/script_config.hjson
+            volumeMounts:
+            - name: hyfaa-scheduler-data
+              mountPath: /hyfaa-scheduler/data
+          restartPolicy: Never
+
+{{- end }}

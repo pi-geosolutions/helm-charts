@@ -1,0 +1,222 @@
+# Default values for mgb-hyfaa.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+rootStoragePath: "/mnt/ird_mgb_hyfaa"
+createDirectories: true
+
+nodeSelector: 
+  h2o: "true"
+
+tolerations: []
+
+affinity: {}
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+
+database:
+  image:
+    repository: postgis/postgis
+    tag: "10-3.1"
+    pullPolicy: IfNotPresent
+  schema: hyfaa
+  auth:
+    dbname: mgb_hyfaa
+    postgres_user: postgres
+    postgres_password: hyfaa-password
+    # To use an externally managed secret, declare it here, this will override the authparams above
+    existingSecret: secrets-ird-mgb-hyfaa-database-secret
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    # Set external to true if you want to use an externally managed PV
+    external: false
+    pv_name: database-data
+    size: 200Gi
+
+
+site:
+  enabled: true
+  image:
+    repository: pigeosolutions/hyfaa-site
+    tag: "latest"
+    pullPolicy: Always
+  securityContext: {}
+
+frontend:
+  enabled: true
+  image:
+    repository: pigeosolutions/hyfaa-frontend
+    tag: "latest"
+    pullPolicy: Always
+  securityContext: {}
+
+frontendAssim:
+  enabled: true
+  image:
+    repository: pigeosolutions/hyfaa-frontend
+    tag: "latest"
+    pullPolicy: Always
+  securityContext: {}
+
+backend:
+  cronjob:
+    enabled: true
+    schedule: "0 7 * * *"
+  image:
+    repository: pigeosolutions/hyfaa-backend
+    tag: "1.1"
+    pullPolicy: Always
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  settings:
+  auth:
+    # To use an externally managed secret, declare it here, this will override the authparams below
+    existingSecret: secrets-ird-mgb-hyfaa-backend-db-secret
+    DATABASE_URI: postgresql://publisher:passwordrw@database:5432/mgb_hyfaa
+    DATABASE_URI_RW: postgresql://reader:passwordr@database:5432/mgb_hyfaa
+
+
+pgTileserv:
+  enabled: true
+  image:
+    repository: pigeosolutions/pg_tileserv
+    tag: "alpine-latest"
+    pullPolicy: Always
+  securityContext: {}
+  auth:
+    # To use an externally managed secret, declare it here, this will override the authparams below
+    existingSecret: secrets-ird-mgb-hyfaa-pg-tileserv-secret
+    databaseUrl: postgres://tileserv:tileserv@database/mgb_hyfaa
+
+
+hyfaaScheduler:
+  enabled: true
+  schedule: "0 6 * * *"
+  image:
+    repository: pigeosolutions/hyfaa-scheduler
+    tag: "20240607-1623-ab44fe8"
+    pullPolicy: IfNotPresent
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+  storage:
+    # We might need to specify a custom storageClass
+    # Leave it commented if not needed
+    # storage_class_name: default
+    # Set external to true if you want to use an externally managed PV
+    external: false
+    pv_name: hyfaa-scheduler-data
+    size: 200Gi
+
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/issue-temporary-certificate: "true"
+    acme.cert-manager.io/http01-edit-in-place: "true"
+    kubernetes.io/ingress.class: traefik
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: mgb-hyfaa.pigeo.fr
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend-svc
+          portNumber: 80
+    - host: mgb-hyfaa.pigeo.fr
+      paths:
+        - path: /site/
+          pathType: Prefix
+          service: site-svc
+          portNumber: 80
+    - host: mgb-hyfaa.pigeo.fr
+      paths:
+        - path: /tiles/
+          pathType: Prefix
+          service: pg-tileserv-svc
+          portNumber: 7800
+    - host: mgb-hyfaa.pigeo.fr
+      paths:
+        - path: /api/
+          pathType: Prefix
+          service: backend-svc
+          portNumber: 5000
+    - host: mgb-hyfaa.pigeo.fr
+      paths:
+        - path: /swaggerui/
+          pathType: Prefix
+          service: backend-svc
+          portNumber: 5000
+    - host: hyfaa.pigeo.fr
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend-assim-svc
+          portNumber: 80
+    - host: hyfaa.pigeo.fr
+      paths:
+        - path: /site/
+          pathType: Prefix
+          service: site-svc
+          portNumber: 80
+    - host: hyfaa.pigeo.fr
+      paths:
+        - path: /tiles/
+          pathType: Prefix
+          service: pg-tileserv-svc
+          portNumber: 7800
+    - host: hyfaa.pigeo.fr
+      paths:
+        - path: /api/
+          pathType: Prefix
+          service: backend-svc
+          portNumber: 5000
+    - host: hyfaa.pigeo.fr
+      paths:
+        - path: /swaggerui/
+          pathType: Prefix
+          service: backend-svc
+          portNumber: 5000
+
+  # tls: []
+  tls:
+   - secretName: ird-mgb-hyfaa-tls
+     hosts:
+       - mgb-hyfaa.pigeo.fr
+       - hyfaa.pigeo.fr

@@ -1,0 +1,40 @@
+{{- if .Values.createDirectories -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init-scripts
+  labels:
+    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
+data:
+  local-volumes-init.sh: |
+    #!/bin/sh
+
+    #################
+    # Database volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.database.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
+      # Set ownership
+      chown  -R 999:999 {{ $folder }}
+    fi
+
+
+    #################
+    # HYFAA scheduler volume
+    #################
+
+    {{- $folder :=  printf "/mnt/%s" (.Values.hyfaaScheduler.storage.pv_name | replace "-" "_") }}
+    if [ -d {{ $folder }} ]; then
+      echo "Folder {{ $folder }} already exists. Skipping initialization for this one."
+    else
+      echo "creating {{ $folder }}"
+      mkdir -p {{ $folder }}
+    fi
+
+
+{{- end }}

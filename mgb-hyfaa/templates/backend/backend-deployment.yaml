@@ -1,0 +1,70 @@
+{{- $app := .Values.backend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+  labels:
+    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+  template:
+    metadata:
+      labels:
+        {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 8 }}
+        org.ird-mgb-hyfaa.service/name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+        app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+        {{- with $.Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: hyfaa-scheduler-data
+        persistentVolumeClaim:
+          claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+      {{- with $app.securityContext }}
+      securityContext: 
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      containers:
+      - name: backend
+        image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+        imagePullPolicy: {{ $app.image.pullPolicy }}
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - secretRef:
+              {{- if hasKey $app.auth "existingSecret" }}
+              name: {{ $app.auth.existingSecret }}
+              {{- else }}
+              name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-db-secret
+              {{- end }}
+        env:
+          - name: FLASK_CONFIGURATION
+            value: production
+          - name: SCRIPT_CONFIG_PATH
+            value: conf/script_config.hjson
+        volumeMounts:
+        - name: hyfaa-scheduler-data
+          mountPath: /hyfaa-scheduler/data
+        # livenessProbe:
+        #   httpGet:
+        #     path: /backend/srv/eng/catalog.search
+        #     port: 8080
+        #   periodSeconds: 10
+        #   timeoutSeconds: 5
+        # startupProbe:
+        #   tcpSocket:
+        #     port: 8080
+        #   failureThreshold: 5
+        #   periodSeconds: 50
+---

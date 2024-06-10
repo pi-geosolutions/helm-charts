@@ -1,0 +1,62 @@
+{{- if .Values.createDirectories -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init-container
+  labels:
+    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init
+spec:
+  selector:
+    matchLabels:
+      {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 6 }}
+      app: local-volumes-init-container
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+        # Force redeploy at each helm upgrade
+        timestamp: {{ now | quote }}
+      {{- end }}
+      labels:
+        {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 8 }}
+        app: local-volumes-init-container
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: mnt
+        # persistentVolumeClaim:
+        #   claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-mnt
+        hostPath:
+          path: {{ .Values.rootStoragePath }}/
+          type: Directory
+      - name: init-volumes-scripts
+        configMap:
+          name: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init-scripts
+          defaultMode: 0755
+
+      initContainers:
+      - name: local-volumes-init
+        image: busybox
+        command:
+        - sh
+        - /scripts/local-volumes-init.sh
+        volumeMounts:
+        - name: mnt
+          mountPath: /mnt
+        - name: init-volumes-scripts
+          mountPath: /scripts
+      containers:
+      - name: volumes-idle
+        image: busybox
+        command:
+        - tail
+        - -f
+        - /dev/null
+        
+{{- end }}

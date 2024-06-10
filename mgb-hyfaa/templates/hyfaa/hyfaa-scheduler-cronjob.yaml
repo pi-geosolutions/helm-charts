@@ -1,0 +1,62 @@
+
+{{- $app := .Values.hyfaaScheduler -}}
+{{ if $app.enabled }}
+{{/*
+Run hyfaa scheduler 
+*/}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-crontask
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ $app.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $app.securityContext }}
+          securityContext: 
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumes:
+          - name: hyfaa-scheduler-data
+            persistentVolumeClaim:
+              claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+          initContainers:
+          - name: fix-permissions-pvc
+            image: busybox:latest
+            command: 
+              - /bin/sh
+              - -c
+              - chown -R {{ $app.securityContext.runAsUser | default "999" }}:{{ $app.securityContext.runAsGroup | default "999" }} /work ;
+                chmod +x /work/run.sh ;
+            volumeMounts:
+            - name: hyfaa-scheduler-data
+              mountPath: /work
+          containers:
+          - name:  hyfaa-scheduler-crontask
+            image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+            imagePullPolicy:  {{ $app.image.pullPolicy }}
+            command:
+            - /bin/sh
+            - -c
+            - /work/run.sh
+            env:
+            - name: MPLCONFIGDIR
+              value: /work/.config
+            - name: CLEAR_LOCKS
+              value: "true"
+            volumeMounts:
+            - name: hyfaa-scheduler-data
+              mountPath: /work
+            workingDir: /work
+          restartPolicy: Never
+
+{{- end }}
