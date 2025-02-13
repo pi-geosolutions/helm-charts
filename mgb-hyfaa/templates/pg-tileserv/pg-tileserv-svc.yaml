@@ -1,14 +1,16 @@
-{{- if .Values.pgTileserv.enabled }}
+
+{{- $app := .Values.pgTileserv -}}
+{{- if $app.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-pg-tileserv-svc
+  name: {{ include "mgb-hyfaa.fullname" . }}-pg-tileserv-svc
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
 spec:
   ports:
     - port: 7800
   selector:
-    {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-pg-tileserv
+    {{- include "mgb-hyfaa.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-pg-tileserv
 {{- end }}

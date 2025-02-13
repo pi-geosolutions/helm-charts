@@ -5,9 +5,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim-cm
+  name: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim-cm
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
 data:
   settings.json: |-
     {

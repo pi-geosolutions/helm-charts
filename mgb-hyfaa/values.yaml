@@ -89,6 +89,7 @@ frontendAssim:
   securityContext: {}
 
 backend:
+  enabled: true
   cronjob:
     enabled: true
     schedule: "0 7 * * *"
@@ -126,7 +127,7 @@ hyfaaScheduler:
   schedule: "0 6 * * *"
   image:
     repository: pigeosolutions/hyfaa-scheduler
-    tag: "20240607-1623-ab44fe8"
+    tag: "20240611-1619-ec947ed"
     pullPolicy: IfNotPresent
   securityContext:
     runAsUser: 1001
@@ -140,6 +141,10 @@ hyfaaScheduler:
     external: false
     pv_name: hyfaa-scheduler-data
     size: 200Gi
+  auth:
+    # To use an externally managed secret, declare it here, this will override the authparams below
+    existingSecret: secrets-ird-mgb-hyfaa-scheduler-secret
+    apikey: hydrowebnextsupersecretapikey
 
 
 ingress:

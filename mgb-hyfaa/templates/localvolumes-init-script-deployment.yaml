@@ -2,14 +2,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init-container
+  name: {{ include "mgb-hyfaa.fullname" . }}-local-volumes-init-container
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-local-volumes-init
 spec:
   selector:
     matchLabels:
-      {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 6 }}
+      {{- include "mgb-hyfaa.selectorLabels" . | nindent 6 }}
       app: local-volumes-init-container
   template:
     metadata:
@@ -20,7 +20,7 @@ spec:
         timestamp: {{ now | quote }}
       {{- end }}
       labels:
-        {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 8 }}
+        {{- include "mgb-hyfaa.selectorLabels" . | nindent 8 }}
         app: local-volumes-init-container
     spec:
       {{- with .Values.nodeSelector }}
@@ -31,13 +31,13 @@ spec:
       volumes:
       - name: mnt
         # persistentVolumeClaim:
-        #   claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-mnt
+        #   claimName: {{ include "mgb-hyfaa.fullname" . }}-mnt
         hostPath:
           path: {{ .Values.rootStoragePath }}/
           type: Directory
       - name: init-volumes-scripts
         configMap:
-          name: {{ include "ird-mgb-hyfaa.fullname" . }}-local-volumes-init-scripts
+          name: {{ include "mgb-hyfaa.fullname" . }}-local-volumes-init-scripts
           defaultMode: 0755
 
       initContainers:

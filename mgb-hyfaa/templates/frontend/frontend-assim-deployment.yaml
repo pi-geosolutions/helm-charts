@@ -5,24 +5,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim
+  name: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim
+      {{- include "mgb-hyfaa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim
   template:
     metadata:
       labels:
-        {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 8 }}
-        org.ird-mgb-hyfaa.service/name: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim
-        app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim
+        {{- include "mgb-hyfaa.selectorLabels" . | nindent 8 }}
+        org.mgb-hyfaa.service/name: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim
+        app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim
     spec:
       nodeSelector:
         "kubernetes.io/os": linux
@@ -32,8 +32,8 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
       - name: frontend-assim-config
-        persistentVolumeClaim:
-          claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-frontend-assim-cm
+        configMap:
+          name: {{ include "mgb-hyfaa.fullname" . }}-frontend-assim-cm
       {{- with $app.securityContext }}
       securityContext: 
         {{- toYaml . | nindent 12 }}
@@ -47,6 +47,7 @@ spec:
         volumeMounts:
         - name: frontend-assim-config
           mountPath: /usr/share/nginx/html/assets/settings.json
+          subPath: settings.json
         # livenessProbe:
         #   httpGet:
         #     path: /backend/srv/eng/catalog.search

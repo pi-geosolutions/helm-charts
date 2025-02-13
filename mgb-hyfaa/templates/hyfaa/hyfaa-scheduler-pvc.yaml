@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+  name: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler
 spec:
   accessModes:
   - ReadWriteOnce
@@ -15,7 +15,7 @@ spec:
   {{- if $app.storage.external }}
   volumeName: {{ $app.storage.pv_name }}
   {{- else }}
-  volumeName: {{ include "ird-mgb-hyfaa.fullname" . }}-{{ $app.storage.pv_name }}
+  volumeName: {{ include "mgb-hyfaa.fullname" . }}-{{ $app.storage.pv_name }}
   {{- end }}
   resources:
     requests:

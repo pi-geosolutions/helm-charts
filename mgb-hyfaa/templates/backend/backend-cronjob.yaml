@@ -1,13 +1,13 @@
 
 {{- $app := .Values.backend -}}
-{{ if $app.cronjob.enabled }}
+{{ if and $app.enabled $app.cronjob.enabled }}
 {{/*
 Run backend scripts
 */}}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-crontask
+  name: {{ include "mgb-hyfaa.fullname" . }}-backend-crontask
 spec:
   concurrencyPolicy: Forbid
   schedule: {{ $app.cronjob.schedule | quote }}
@@ -28,23 +28,24 @@ spec:
           volumes:
           - name: hyfaa-scheduler-data
             persistentVolumeClaim:
-              claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+              claimName: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
           containers:
           - name:  backend-crontask
             image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
             imagePullPolicy:  {{ $app.image.pullPolicy }}
             command:
+            - python3
             - /hyfaa-backend/app/scripts/hyfaa_netcdf2DB.py
-            - /hyfaa-scheduler/data/
-            - --commit_page_size
-            - 50
+            - "/hyfaa-scheduler/data/"
+            - "--commit_page_size"
+            - "50"
             envFrom:
-          - secretRef:
-              {{- if hasKey $app.auth "existingSecret" }}
-              name: {{ $app.auth.existingSecret }}
-              {{- else }}
-              name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-db-secret
-              {{- end }}
+            - secretRef:
+                {{- if hasKey $app.auth "existingSecret" }}
+                name: {{ $app.auth.existingSecret }}
+                {{- else }}
+                name: {{ include "mgb-hyfaa.fullname" . }}-backend-db-secret
+                {{- end }}
             env:
               - name: FLASK_CONFIGURATION
                 value: production

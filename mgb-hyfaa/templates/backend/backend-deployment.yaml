@@ -1,25 +1,26 @@
 {{- $app := .Values.backend -}}
+{{ if $app.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+  name: {{ include "mgb-hyfaa.fullname" . }}-backend
   labels:
-    {{- include "ird-mgb-hyfaa.labels" . | nindent 4 }}
-    app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+    {{- include "mgb-hyfaa.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-backend
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+      {{- include "mgb-hyfaa.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-backend
   template:
     metadata:
       labels:
-        {{- include "ird-mgb-hyfaa.selectorLabels" . | nindent 8 }}
-        org.ird-mgb-hyfaa.service/name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
-        app.kubernetes.io/component: {{ include "ird-mgb-hyfaa.fullname" . }}-backend
+        {{- include "mgb-hyfaa.selectorLabels" . | nindent 8 }}
+        org.mgb-hyfaa.service/name: {{ include "mgb-hyfaa.fullname" . }}-backend
+        app.kubernetes.io/component: {{ include "mgb-hyfaa.fullname" . }}-backend
     spec:
       nodeSelector:
         "kubernetes.io/os": linux
@@ -30,7 +31,7 @@ spec:
       volumes:
       - name: hyfaa-scheduler-data
         persistentVolumeClaim:
-          claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+          claimName: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
       {{- with $app.securityContext }}
       securityContext: 
         {{- toYaml . | nindent 12 }}
@@ -46,7 +47,7 @@ spec:
               {{- if hasKey $app.auth "existingSecret" }}
               name: {{ $app.auth.existingSecret }}
               {{- else }}
-              name: {{ include "ird-mgb-hyfaa.fullname" . }}-backend-db-secret
+              name: {{ include "mgb-hyfaa.fullname" . }}-backend-db-secret
               {{- end }}
         env:
           - name: FLASK_CONFIGURATION
@@ -68,3 +69,4 @@ spec:
         #   failureThreshold: 5
         #   periodSeconds: 50
 ---
+{{- end }}

@@ -7,7 +7,7 @@ Run hyfaa scheduler
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-crontask
+  name: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-crontask
 spec:
   concurrencyPolicy: Forbid
   schedule: {{ $app.schedule | quote }}
@@ -28,7 +28,7 @@ spec:
           volumes:
           - name: hyfaa-scheduler-data
             persistentVolumeClaim:
-              claimName: {{ include "ird-mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
+              claimName: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-data
           initContainers:
           - name: fix-permissions-pvc
             image: busybox:latest
@@ -48,6 +48,13 @@ spec:
             - /bin/sh
             - -c
             - /work/run.sh
+            envFrom:
+              - secretRef:
+                  {{- if hasKey .Values.hyfaaScheduler.auth "existingSecret" }}
+                  name: {{ .Values.hyfaaScheduler.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ include "mgb-hyfaa.fullname" . }}-hyfaa-scheduler-secret
+                  {{- end }}
             env:
             - name: MPLCONFIGDIR
               value: /work/.config
