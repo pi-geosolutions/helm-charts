@@ -48,6 +48,13 @@ spec:
             - /bin/sh
             - -c
             - /work/run.sh
+            envFrom:
+              - secretRef:
+                  {{- if hasKey $app.auth "existingSecret" }}
+                  name: {{ $app.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-secret
+                  {{- end }}
             env:
             - name: MPLCONFIGDIR
               value: /work/.config
