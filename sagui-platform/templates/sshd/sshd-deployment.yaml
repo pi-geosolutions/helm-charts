@@ -1,0 +1,106 @@
+{{- $app := .Values.sshd -}}
+{{- if $app.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-sshd
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-sshd
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sagui-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-sshd
+  template:
+    metadata:
+      labels:
+        {{- include "sagui-platform.selectorLabels" . | nindent 8 }}
+        org.sagui-platform.service/name: {{ include "sagui-platform.fullname" . }}-sshd
+        app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-sshd
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+        {{- with $.Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: hyfaa-scheduler-data
+        persistentVolumeClaim:
+          claimName: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+      {{- if $app.hostKeys }}
+      - name: sshd-host-key
+        configMap:
+          name: {{ include "sagui-platform.fullname" . }}-sshd-host-key
+          defaultMode: 0600
+      {{- end }}
+      {{- if $app.authorizedKeys }}
+      - name: authorized-keys-cm
+        configMap:
+          name: {{ include "sagui-platform.fullname" . }}-sshd-authorized-keys
+          defaultMode: 0600
+      - name: authorized-keys
+        emptyDir:
+          sizeLimit: 10Mi
+      {{- end }}
+      {{- with $app.securityContext }}
+      securityContext: 
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with $app.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+      # We need the authorized_keys files to be owned by their respective users which 
+      # a configMap will not allow. So we have to use an emptyDir, copy the files and 
+      # fix the permissions
+        - name: fix-permissions-authorized-keys
+          image: busybox:latest
+          command: 
+            - /bin/sh
+            - -c
+            - cp /cm/authorized_keys/* /etc/authorized_keys ; 
+            {{- range $app.users }}
+              chown -R {{ printf "%s:%s" .uid .gid }} /etc/authorized_keys/{{ .name }} ;
+            {{- end }}
+          volumeMounts:
+          - name: authorized-keys
+            mountPath: "/etc/authorized_keys"
+          - name: authorized-keys-cm
+            mountPath: "/cm/authorized_keys"
+      containers:
+      - name: sshd
+        image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
+        imagePullPolicy: {{ $app.image.pullPolicy }}
+        ports:
+          - containerPort: 22
+        env:
+          - name: SSH_USERS
+            value: {{ include "sagui-platform.sshdUsers" . }}
+          - name: SSH_ENABLE_ROOT
+            value: "false"
+          {{- if $app.sftponly }}
+          - name: SFTP_MODE
+            value: "true"
+          - name: SFTP_CHROOT
+            value: "/mnt"
+          {{- end }}
+        volumeMounts:
+        - name: hyfaa-scheduler-data
+          mountPath: /mnt/hyfaa-scheduler/data
+        {{- if $app.hostKeys }}
+        - name: sshd-host-key
+          mountPath: "/etc/ssh/keys"
+          readOnly: true
+        {{- end }}
+        {{- if $app.authorizedKeys }}
+        - name: authorized-keys
+          mountPath: "/etc/authorized_keys"
+        {{- end }}
+---
+{{- end }}

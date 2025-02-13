@@ -60,3 +60,15 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+
+{{- define "sagui-platform.sshdUsers" -}}
+{{- if .Values.sshd.users }}
+{{- $list := list }}
+{{- range .Values.sshd.users }}
+{{- $list = append $list (printf "%s:%s:%s" .name .uid .gid) }}
+{{- end }}
+{{- join "," $list }}
+{{- end }}
+{{- end }}

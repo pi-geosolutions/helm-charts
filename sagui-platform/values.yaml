@@ -260,7 +260,36 @@ varnish:
     pullPolicy: Always
   securityContext: {}
 
+sshd:
+  enabled: false
+  image:
+    repository: ghcr.io/pi-geosolutions/docker-sshd
+    tag: 20250212-1615-4e9d5e5
+    pullPolicy: IfNotPresent
+  # imagePullSecrets:
+  #   - name: ghcr-login-secret
+  port: 2222
+  users: 
+    - name: sftp
+      uid: 1001
+      gid: 1001
+  sftponly: true
+  # You can provide the SSH host keys. That will ensure that the sshd server will 
+  # keep the same ID between deployments. Recommended way is to provide them 
+  # with set-file options but you can also place the content here (just, it's very noisy)
+  # hostKeys: 
+  #   idRsa: {}
+  #   idRsaPub: {}
+  #   idEcdsa: {}
+  #   idEcdsaPub: {}
+  #   idEd25519: {}
+  #   idEd25519Pub: {}
+  # authorizedKeys:
+  #   - name: sftp
+  #     keys: |
+  #         ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDsBuvOvbquX5uX+UFvEG+9kqpTysDRMbfpAPM56N1UU jpommier@Thor
 
+  
 
 ingress:
   enabled: true

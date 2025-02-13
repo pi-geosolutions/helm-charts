@@ -1,0 +1,19 @@
+{{- $app := .Values.sshd -}}
+{{- if $app.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-sshd-svc
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: {{ $app.port }}
+      targetPort: 22
+  selector:
+    {{- include "sagui-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sagui-platform.fullname" . }}-sshd
+
+{{- end }}

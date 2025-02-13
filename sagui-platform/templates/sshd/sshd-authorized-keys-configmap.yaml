@@ -1,0 +1,14 @@
+{{- $app := .Values.sshd -}}
+{{- if $app.authorizedKeys }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sagui-platform.fullname" . }}-sshd-authorized-keys
+  labels:
+    {{- include "sagui-platform.labels" . | nindent 4 }}
+data:
+{{- range $app.authorizedKeys }}
+  {{ .name }}: {{ .keys | nindent 4 }}
+{{- end }}
+
+{{- end }}
