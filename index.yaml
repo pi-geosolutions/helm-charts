@@ -22,6 +22,17 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/databases-1.0.10/databases-1.0.10.tgz
     version: 1.0.10
+  mgb-hyfaa:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2025-04-07T14:25:48.876007183Z"
+    description: A Helm chart for Kubernetes
+    digest: ab1bd71540854d206b62ccec7f063718d83da1856a427fec84d9abf5932b7fa6
+    name: mgb-hyfaa
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/mgb-hyfaa-0.1.0/mgb-hyfaa-0.1.0.tgz
+    version: 0.1.0
   mviewer:
   - apiVersion: v2
     appVersion: 4.0.0
@@ -106,4 +117,4 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/wordpress-1.0.10/wordpress-1.0.10.tgz
     version: 1.0.10
-generated: "2024-05-03T14:32:55.781527226Z"
+generated: "2025-04-07T14:25:50.451870948Z"
