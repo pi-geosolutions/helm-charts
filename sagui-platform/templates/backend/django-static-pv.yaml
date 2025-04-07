@@ -1,5 +1,5 @@
-{{- if .Values.createDirectories -}}
-{{- if not .Values.backend.storage.external -}}
+{{- $app := .Values.backend -}}
+{{- if and $app.enabled .Values.createDirectories (not .Values.backend.storage.external)}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -22,5 +22,4 @@ spec:
           operator: In
           values:
           - "true"
-{{- end }}
 {{- end }}

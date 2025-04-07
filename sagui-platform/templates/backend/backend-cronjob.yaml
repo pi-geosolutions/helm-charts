@@ -1,6 +1,6 @@
 
 {{- $app := .Values.backend -}}
-{{ if $app.cronjob.enabled }}
+{{ if and $app.enabled $app.cronjob.enabled }}
 {{/*
 Run django backend scripts
 */}}

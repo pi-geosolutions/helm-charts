@@ -1,6 +1,6 @@
 {{- if .Values.createDirectories -}}
 {{- $app := .Values.atmo -}}
-{{- if not .Values.atmo.storage.external -}}
+{{- if and ($app.enabled) (not .Values.atmo.storage.external) -}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:

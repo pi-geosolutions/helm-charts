@@ -90,6 +90,10 @@ spec:
           - name: SFTP_CHROOT
             value: "/mnt"
           {{- end }}
+          - name: PROMPT
+            value: {{ $app.prompt | quote | default "$ "}}
+          - name: MOTD
+            value: {{ $app.motd | quote | default "" }}
         volumeMounts:
         - name: hyfaa-scheduler-data
           mountPath: /mnt/hyfaa-scheduler/data

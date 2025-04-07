@@ -1,4 +1,7 @@
+
 {{- $app := .Values.pgTileserv -}}
+{{ if $app.enabled }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,3 +62,4 @@ spec:
         #   failureThreshold: 5
         #   periodSeconds: 50
 ---
+{{- end }}

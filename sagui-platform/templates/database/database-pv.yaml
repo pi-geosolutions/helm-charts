@@ -1,5 +1,7 @@
+
+{{- $app := .Values.database -}}
 {{- if .Values.createDirectories -}}
-{{- if not .Values.database.storage.external -}}
+{{- if and $app.enabled (not .Values.database.storage.external) -}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:

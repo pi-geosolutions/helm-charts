@@ -1,5 +1,5 @@
 {{- $app := .Values.sshd -}}
-{{- if $app.authorizedKeys }}
+{{- if and $app.enabled $app.authorizedKeys }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

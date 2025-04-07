@@ -1,4 +1,6 @@
 
+{{- $app := .Values.database -}}
+{{ if $app.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -47,4 +49,4 @@ data:
       CONNECTION LIMIT 50;
 
     GRANT USAGE ON SCHEMA {{ .Values.database.schema }} TO tileserv;
-    
+{{- end }}

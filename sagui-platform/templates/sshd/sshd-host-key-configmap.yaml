@@ -1,5 +1,5 @@
 {{- $app := .Values.sshd -}}
-{{- if $app.hostKeys }}
+{{- if and $app.enabled $app.hostKeys }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

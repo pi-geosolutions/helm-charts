@@ -1,4 +1,5 @@
 {{- $app := .Values.atmo -}}
+{{ if $app.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -20,3 +21,4 @@ spec:
   resources:
     requests:
       storage: {{ $app.storage.size }}
+{{- end }}

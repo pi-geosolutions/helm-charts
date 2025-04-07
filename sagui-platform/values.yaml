@@ -43,6 +43,7 @@ securityContext: {}
 
 
 database:
+  enabled: true
   image:
     repository: postgis/postgis
     tag: "14-3.2"
@@ -104,6 +105,7 @@ database:
     max_parallel_maintenance_workers = '2';
 
 frontend:
+  enabled: true
   image:
     repository: pigeosolutions/sagui-ui
     tag: "latest"
@@ -111,6 +113,7 @@ frontend:
   securityContext: {}
 
 backend:
+  enabled: true
   cronjob:
     enabled: true
     schedule: "45 6 * * *"
@@ -254,6 +257,7 @@ nginx:
     type: ClusterIP
 
 varnish:
+  enabled: true
   image:
     repository: varnish
     tag: "stable"
@@ -264,11 +268,13 @@ sshd:
   enabled: false
   image:
     repository: ghcr.io/pi-geosolutions/docker-sshd
-    tag: 20250212-1615-4e9d5e5
+    tag: latest
     pullPolicy: IfNotPresent
   # imagePullSecrets:
   #   - name: ghcr-login-secret
-  port: 2222
+  # if port >= 30000, it will directly use a nodePort service (preferred)
+  # if < 30000, it will create a LoadBalancer service, which will take more resources
+  port: 30000
   users: 
     - name: sftp
       uid: 1001
