@@ -274,26 +274,29 @@ sshd:
   #   - name: ghcr-login-secret
   # if port >= 30000, it will directly use a nodePort service (preferred)
   # if < 30000, it will create a LoadBalancer service, which will take more resources
-  port: 30000
+  port: "30000"
   users: 
     - name: sftp
-      uid: 1001
-      gid: 1001
+      uid: "1001"
+      gid: "1001"
   sftponly: true
   # You can provide the SSH host keys. That will ensure that the sshd server will 
   # keep the same ID between deployments. Recommended way is to provide them 
   # with set-file options but you can also place the content here (just, it's very noisy)
-  # hostKeys: 
+  # hostKeys: {}
   #   idRsa: {}
   #   idRsaPub: {}
   #   idEcdsa: {}
   #   idEcdsaPub: {}
   #   idEd25519: {}
   #   idEd25519Pub: {}
-  # authorizedKeys:
+  # authorizedKeys: {}
   #   - name: sftp
   #     keys: |
   #         ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDsBuvOvbquX5uX+UFvEG+9kqpTysDRMbfpAPM56N1UU jpommier@Thor
+  # You can customize the ssh console prompt:
+  # prompt: "\\[\\033[0;32m\\]sftp@sagui:\\w > \\[\\033[0m\\]"
+  # motd: "\n ######################## \n PLATEFORME SAGUI \n ########################"
 
   
 
