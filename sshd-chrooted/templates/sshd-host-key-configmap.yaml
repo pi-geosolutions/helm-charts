@@ -1,0 +1,34 @@
+{{- if .Values.hostKeys }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sshd-chrooted.fullname" . }}-sshd-host-key
+  labels:
+    {{- include "sshd-chrooted.labels" . | nindent 4 }}
+data:
+  {{- with .Values.hostKeys.idRsa }}
+  ssh_host_rsa_key:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostKeys.idRsaPub }}
+  ssh_host_rsa_key.pub:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostKeys.idEcdsa }}
+  ssh_host_ecdsa_key:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostKeys.idEcdsaPub }}
+  ssh_host_ecdsa_key.pub:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostKeys.idEd25519 }}
+  ssh_host_ed25519_key:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.hostKeys.idEd25519Pub }}
+  ssh_host_ed25519_key.pub:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+{{- end }}

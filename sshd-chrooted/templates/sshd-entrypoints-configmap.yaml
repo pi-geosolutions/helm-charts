@@ -1,0 +1,20 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sshd-chrooted.fullname" . }}-sshd-entrypoints
+  labels:
+    {{- include "sshd-chrooted.labels" . | nindent 4 }}
+data:
+  {{- if .Values.enablepassword }}
+    {{- range .Values.users }}
+  setpasswords.sh: |
+    #!/bin/bash
+    echo "Setting password for users"
+      {{- if .password }}
+    echo "- User {{ .name }}"
+    pw=$(mkpasswd {{ .password }})
+    echo "{{ .name }}:$pw" | chpasswd --encrypted
+      {{- end }}
+    {{- end }}
+  {{- end }}

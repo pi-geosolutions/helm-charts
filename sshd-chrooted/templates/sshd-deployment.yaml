@@ -1,0 +1,126 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sshd-chrooted.fullname" . }}-sshd
+  labels:
+    {{- include "sshd-chrooted.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "sshd-chrooted.fullname" . }}-sshd
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "sshd-chrooted.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "sshd-chrooted.fullname" . }}-sshd
+  template:
+    metadata:
+      labels:
+        {{- include "sshd-chrooted.selectorLabels" . | nindent 8 }}
+        org.sshd-chrooted.service/name: {{ include "sshd-chrooted.fullname" . }}-sshd
+        app.kubernetes.io/component: {{ include "sshd-chrooted.fullname" . }}-sshd
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+        {{- with $.Values.nodeSelector }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      terminationGracePeriodSeconds: 10
+      volumes:
+      {{- if .Values.hostKeys }}
+      - name: sshd-host-key
+        configMap:
+          name: {{ include "sshd-chrooted.fullname" . }}-sshd-host-key
+          defaultMode: 0600
+      {{- end }}
+      {{- if .Values.authorizedKeys }}
+      - name: authorized-keys-cm
+        configMap:
+          name: {{ include "sshd-chrooted.fullname" . }}-sshd-authorized-keys
+          defaultMode: 0600
+      - name: authorized-keys
+        emptyDir:
+          sizeLimit: 10Mi
+      {{- end }}
+      - name: entrypoints-cm
+        configMap:
+          name: {{ include "sshd-chrooted.fullname" . }}-sshd-entrypoints
+          defaultMode: 0755
+      {{- range .Values.mountedDirectories }}
+      - name:  {{ .dir.pvcname }}
+        persistentVolumeClaim:
+          claimName: {{ .dir.pvcname }}
+      {{- end }}
+      {{- with .Values.securityContext }}
+      securityContext: 
+        {{- toYaml . | nindent 12 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if  .Values.authorizedKeys }}
+      initContainers:
+      # We need the authorized_keys files to be owned by their respective users which 
+      # a configMap will not allow. So we have to use an emptyDir, copy the files and 
+      # fix the permissions
+        - name: fix-permissions-authorized-keys
+          image: busybox:latest
+          command: 
+            - /bin/sh
+            - -c
+            - cp /cm/authorized_keys/* /etc/authorized_keys ; 
+            {{- range .Values.users }}
+              if [ -f "/etc/authorized_keys/{{ .name }}" ]; then 
+                chown -R {{ printf "%s:%s" .uid .gid }} /etc/authorized_keys/{{ .name }} ;
+              fi
+            {{- end }}
+          volumeMounts:
+          - name: authorized-keys
+            mountPath: "/etc/authorized_keys"
+          - name: authorized-keys-cm
+            mountPath: "/cm/authorized_keys"
+      {{- end }}
+      containers:
+      - name: sshd
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - containerPort: 22
+        env:
+          - name: SSH_USERS
+            value: {{ include "sshd-chrooted.sshdUsers" . }}
+          - name: SSH_ENABLE_ROOT
+            value: "false"
+          {{- if .Values.sftponly }}
+          - name: SFTP_MODE
+            value: "true"
+          - name: SFTP_CHROOT
+            value: "/mnt"
+          {{- end }}
+          {{- if .Values.enablepassword }}
+          - name: SSH_ENABLE_PASSWORD_AUTH
+            value: "true"
+          {{- end }}
+          - name: PROMPT
+            value: {{ .Values.prompt | quote | default "$ "}}
+          - name: MOTD
+            value: {{ .Values.motd | quote | default "" }}
+        volumeMounts:
+        {{- if .Values.hostKeys }}
+        - name: sshd-host-key
+          mountPath: "/etc/ssh/keys"
+          readOnly: true
+        {{- end }}
+        {{- if .Values.authorizedKeys }}
+        - name: authorized-keys
+          mountPath: "/etc/authorized_keys"
+        {{- end }}
+        - name: entrypoints-cm
+          mountPath: "/etc/entrypoint.d"
+        {{- range .Values.mountedDirectories }}
+        - name:  {{ .dir.pvcname }}
+          mountPath: "/mnt/{{ .dir.name }}"
+        {{- end }}
+---

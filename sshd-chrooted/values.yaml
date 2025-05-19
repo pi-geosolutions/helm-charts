@@ -1,0 +1,56 @@
+# Default values for sshd-chrooted.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+image:
+  repository: ghcr.io/pi-geosolutions/docker-sshd
+  tag: latest
+  pullPolicy: IfNotPresent
+# imagePullSecrets:
+#   - name: ghcr-login-secret
+# if port >= 30000, it will directly use a nodePort service (preferred)
+# if < 30000, it will create a LoadBalancer service, which will take more resources
+port: 30000
+# You can set this to true to enable connection with passwords. Passwords are then to be provided for each user listed below
+enablepassword: false
+users: 
+  - name: sftp
+    uid: "1001"
+    gid: "1001"
+    # password: secret
+
+
+sftponly: true
+# You can provide the SSH host keys. That will ensure that the sshd server will 
+# keep the same ID between deployments. Recommended way is to provide them 
+# with set-file options but you can also place the content here (just, it's very noisy)
+hostKeys: {}
+#   idRsa: {}
+#   idRsaPub: {}
+#   idEcdsa: {}
+#   idEcdsaPub: {}
+#   idEd25519: {}
+#   idEd25519Pub: {}
+authorizedKeys: {}
+# authorizedKeys:
+#   - name: sftp
+#     keys: |
+#         ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDsBuvOvbquX5uX+UFvEG+9kqpTysDRMbfpAPM56N1UU jpommier@Thor
+  
+# You can list here several PVCs to have them mounted into /mnt  
+mountedDirectories: {}
+#   - dir:
+#       name: hyfaa_scheduler_data
+#       pvcname: sagui-senegal-hyfaa-scheduler-data 
+
+prompt: "\\[\\033[0;32m\\]sftp@mgb-senegal:\\w > \\[\\033[0m\\]"
+motd: "\n ######################## \n PLATEFORME MGB-Senegal \n ########################"
