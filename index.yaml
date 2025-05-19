@@ -95,6 +95,18 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/sk-harvesters-1.0.10/sk-harvesters-1.0.10.tgz
     version: 1.0.10
+  sshd-chrooted:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2025-05-19T16:33:47.428060664Z"
+    description: Deploy an sshd/sftpd service that can be configured for chrooted
+      access
+    digest: 261efb1e361ad4b0873ab716a997b6820adcca20809b7e275d9b6c31a672c066
+    name: sshd-chrooted
+    type: application
+    urls:
+    - https://github.com/pi-geosolutions/helm-charts/releases/download/sshd-chrooted-0.1.0/sshd-chrooted-0.1.0.tgz
+    version: 0.1.0
   volumes:
   - apiVersion: v2
     appVersion: 1.16.0
@@ -117,4 +129,4 @@ entries:
     urls:
     - https://github.com/pi-geosolutions/helm-charts/releases/download/wordpress-1.0.10/wordpress-1.0.10.tgz
     version: 1.0.10
-generated: "2025-04-07T14:25:50.451870948Z"
+generated: "2025-05-19T16:33:47.42806932Z"
