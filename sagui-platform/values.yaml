@@ -61,7 +61,7 @@ database:
     # storage_class_name: default
     # Set external to true if you want to use an externally managed PV
     external: false
-    pv_name: database-data
+    pv_name: database-data # prefixed by the chart's fullname
     size: 200Gi
   pgtuneConfig: |
     -- DB Version: 14

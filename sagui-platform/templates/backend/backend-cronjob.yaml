@@ -32,9 +32,11 @@ spec:
           - name: hyfaa-scheduler-data
             persistentVolumeClaim:
               claimName: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+          {{- if .Values.atmo.enabled }}
           - name: atmo-data
             persistentVolumeClaim:
               claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
+          {{- end }}
           containers:
           - name:  backend-crontask
             image: {{ $app.image.repository }}:{{ $app.image.tag | default "latest" }}
@@ -80,15 +82,19 @@ spec:
                 value: "/mnt/hyfaa-scheduler/data"
               - name: RAINFALL_NETCDF_FILES_PATH
                 value: "/mnt/hyfaa-scheduler/data/databases/forcing_onmesh_db/data_store/"
+              {{- if .Values.atmo.enabled }}
               - name: SAGUI_PATH_TO_ATMO_FILES
                 value: "/mnt/atmo/data/styled"
+              {{- end }}
             volumeMounts:
             - name: django-static-files
               mountPath: /mnt/django-static
             - name: hyfaa-scheduler-data
               mountPath: /mnt/hyfaa-scheduler/data
+            {{- if .Values.atmo.enabled }}
             - name: atmo-data
               mountPath: /mnt/atmo/data
+            {{- end }}
           restartPolicy: Never
 
 {{- end }}

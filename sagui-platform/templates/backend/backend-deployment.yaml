@@ -35,9 +35,11 @@ spec:
       - name: hyfaa-scheduler-data
         persistentVolumeClaim:
           claimName: {{ include "sagui-platform.fullname" . }}-hyfaa-scheduler-data
+      {{- if .Values.atmo.enabled }}
       - name: atmo-data
         persistentVolumeClaim:
           claimName: {{ include "sagui-platform.fullname" . }}-atmo-data
+      {{- end }}
       {{- with $app.securityContext }}
       securityContext: 
         {{- toYaml . | nindent 12 }}
@@ -103,8 +105,10 @@ spec:
           mountPath: /mnt/django-static
         - name: hyfaa-scheduler-data
           mountPath: /mnt/hyfaa-scheduler/data
+        {{- if .Values.atmo.enabled }}
         - name: atmo-data
           mountPath: /mnt/atmo/data
+        {{- end }}
         # livenessProbe:
         #   httpGet:
         #     path: /backend/srv/eng/catalog.search
