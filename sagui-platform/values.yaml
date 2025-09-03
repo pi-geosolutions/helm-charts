@@ -222,6 +222,10 @@ nginx:
   containerSecurityContext:
     runAsUser: 999
     runAsGroup: 999
+  # You can override here the default index.html file, and if necessary add other files
+  # htmlFiles:
+  #   index.html:
+  #     Set here your custom index html content
   extraVolumes:
     - name: nginx-home
       configMap:
@@ -263,6 +267,9 @@ varnish:
     tag: "stable"
     pullPolicy: Always
   securityContext: {}
+  # You can override the config by providing the content of a varnish vcl file here
+  # By default, it loads it from the config/varnish/default.vcl file
+  # config: {}
   
 
 ingress:

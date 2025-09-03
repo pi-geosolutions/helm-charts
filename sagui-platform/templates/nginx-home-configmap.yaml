@@ -8,5 +8,13 @@ metadata:
   labels:
     {{- include "sagui-platform.labels" . | nindent 4 }}
 data:
+{{ if $app.htmlFiles }}
+  {{- range $path, $config := $app.htmlFiles }}
+  {{ $path }}: |
+    {{- tpl $config $ | nindent 4 -}}
+  {{- end -}}
+{{- else }}
 {{ (.Files.Glob "config/nginx/*").AsConfig | indent 2 }}
+{{- end }}
+
 {{- end }}

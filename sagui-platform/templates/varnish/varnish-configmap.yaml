@@ -8,5 +8,11 @@ metadata:
   labels:
     {{- include "sagui-platform.labels" . | nindent 4 }}
 data:
+{{ if $app.config }}
+  default.vcl: |
+{{ $app.config | indent 4 }}
+{{- else }}
 {{ (.Files.Glob "config/varnish/*").AsConfig | indent 2 }}
+{{- end }}
+
 {{- end }}
