@@ -181,6 +181,9 @@ hyfaaScheduler:
     # To use an externally managed secret, declare it here, this will override the authparams below
     # existingSecret: secrets-sagui-platform-hyfaa-scheduler-secret
     apikey: hydrowebnextsupersecretapikey
+  # extraEnvVars:
+  #   - name: PROM_PUSHGATEWAY_URL
+  #     value: http://pushgateway-prometheus-pushgateway:9091
 
 atmo:
   enabled: false
@@ -230,9 +233,9 @@ nginx:
     - name: nginx-home
       configMap:
         name: sagui-sagui-platform-nginx-home
-    - name: atmo-data
-      persistentVolumeClaim:
-        claimName: sagui-sagui-platform-atmo-data
+    # - name: atmo-data
+    #   persistentVolumeClaim:
+    #     claimName: sagui-sagui-platform-atmo-data
     - name: django-static-files
       persistentVolumeClaim:
         claimName: sagui-sagui-platform-django-static-files
@@ -240,10 +243,10 @@ nginx:
     - name: nginx-home
       mountPath: /opt/bitnami/nginx/html
       readOnly: true
-    - name: atmo-data
-      mountPath: /opt/bitnami/nginx/html/atmo
-      readOnly: true
-    - name: django-static-files
+    # - name: atmo-data
+    #   mountPath: /opt/bitnami/nginx/html/atmo
+    #   readOnly: true
+    # - name: django-static-files
       mountPath: /opt/bitnami/nginx/html/backend_static
       readOnly: true
   resources:

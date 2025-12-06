@@ -60,6 +60,9 @@ spec:
               value: /work/.config
             - name: CLEAR_LOCKS
               value: "true"
+            {{- if $app.extraEnvVars }}
+            {{- $app.extraEnvVars | toYaml | nindent 12 }}
+            {{- end }}
             volumeMounts:
             - name: hyfaa-scheduler-data
               mountPath: /work
