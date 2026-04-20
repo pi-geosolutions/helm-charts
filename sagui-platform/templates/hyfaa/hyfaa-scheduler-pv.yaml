@@ -15,13 +15,17 @@ spec:
   storageClassName: local-path
   local:
     path: {{ .Values.rootStoragePath }}/{{ $app.storage.pv_name | replace "-" "_" }}
+  {{ if .Values.nodeSelector }}
   nodeAffinity:
     required:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: h2o
+      {{- range $k,$v := .Values.nodeSelector }}
+        - key: {{ $k }}
           operator: In
           values:
-          - "true"
+          - {{ $v | quote }}
+      {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

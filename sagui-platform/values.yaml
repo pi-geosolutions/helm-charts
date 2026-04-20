@@ -5,8 +5,7 @@
 rootStoragePath: "/mnt/sagui"
 createDirectories: true
 
-nodeSelector: 
-  h2o: "true"
+nodeSelector: {}
 
 tolerations: []
 
@@ -183,7 +182,7 @@ hyfaaScheduler:
     apikey: hydrowebnextsupersecretapikey
   # extraEnvVars:
   #   - name: PROM_PUSHGATEWAY_URL
-  #     value: http://pushgateway-prometheus-pushgateway:9091
+  #     value: http://monitoring.prometheus-pushgateway:9091
 
 atmo:
   enabled: false
